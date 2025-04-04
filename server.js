@@ -1,19 +1,15 @@
 // server.js
 const express = require('express');
 const path = require('path');
-
 const app = express();
-const port = process.env.PORT || 8080;
 
-// Serve files from the root directory (or any other directory)
-app.use(express.static(path.join(__dirname)));  // <-- Adjusted to serve root
+// Serve 'node_modules' as static files
+app.use('/node_modules', express.static(path.join(__dirname, 'node_modules')));
 
-// Basic route
-app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, 'index.html'));  // Serve your main HTML file
-});
+// Serve your frontend files (HTML, CSS, JS)
+app.use(express.static(path.join(__dirname, '/')));
 
-// Start server
-app.listen(port, () => {
-  console.log(`Server running at port: `,port);
+// Start the server
+app.listen(8080, () => {
+  console.log('Server is running on 8080');
 });
