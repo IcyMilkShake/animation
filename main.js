@@ -3,6 +3,13 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { gsap } from 'gsap';
 import { Draggable } from 'gsap/Draggable';  // Import Draggable plugin
 
+// Register the GSAP Draggable plugin
+gsap.registerPlugin(Draggable);
+
+// Initialize time variable globally
+let time = 0;
+let hasExploded = false;
+
 // Function to hide loading screen from within Three.js
 function hideLoading() {
   const loadingScreen = document.getElementById('loading-screen');
@@ -10,7 +17,9 @@ function hideLoading() {
     loadingScreen.classList.add('hidden');
   }
 }
+
 function createIntroScreen() {
+  
   // Create canvas for intro
   const canvas = document.createElement('canvas');
   canvas.classList.add('intro-canvas');
@@ -23,25 +32,28 @@ function createIntroScreen() {
     canvas: canvas,
     antialias: true
   });
-  
+
   renderer.setSize(window.innerWidth, window.innerHeight);
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
   
   // Set a gradient background
   scene.background = new THREE.Color('#000');
   
-  // Add a center point
-  const centerGeometry = new THREE.SphereGeometry(2, 32, 32);
-  const centerMaterial = new THREE.MeshBasicMaterial({
-    color: 0xffffff,
-    transparent: true,
-    opacity: 0.9
-  });
-  const centerPoint = new THREE.Mesh(centerGeometry, centerMaterial);
-  scene.add(centerPoint);
-  
   // Create shapes array to store all shapes
   const shapes = [];
+  
+  // Add orbit controls for camera
+  const controls = new OrbitControls(camera, renderer.domElement);
+  controls.enableDamping = true;
+  controls.dampingFactor = 0.05;
+  
+  // Setup raycaster for mouse interaction
+  const raycaster = new THREE.Raycaster();
+  const mouse = new THREE.Vector2();
+  let selectedShape = null;
+  let isDragging = false;
+  const dragPlane = new THREE.Plane();
+  const dragOffset = new THREE.Vector3();
   
   // Shape creation functions
   function createCube(size, color, x, y, z) {
@@ -161,6 +173,9 @@ function createIntroScreen() {
     shape.rotation.y = Math.random() * Math.PI * 2;
     shape.rotation.z = Math.random() * Math.PI * 2;
     
+    // Make it draggable by adding userData properties
+    shape.userData.isDraggable = true;
+    
     // Store shape with properties
     shapes.push({
       mesh: shape,
@@ -172,7 +187,15 @@ function createIntroScreen() {
         y: (Math.random() - 0.5) * 0.03,
         z: (Math.random() - 0.5) * 0.03
       },
-      moveSpeed: 0.5 + Math.random() * 0.5
+      moveSpeed: 0.5 + Math.random() * 0.5,
+      // Add explosion properties
+      explosionDirection: new THREE.Vector3(
+        (Math.random() - 0.5) * 2,
+        (Math.random() - 0.5) * 2,
+        (Math.random() - 0.5) * 2
+      ).normalize(),
+      explosionSpeed: 2 + Math.random() * 3,
+      isExploded: false
     });
   }
   
@@ -205,154 +228,225 @@ function createIntroScreen() {
   });
   
   // Animation variables
-  let time = 0;
+  let introTime = 0; // Local time variable for the intro animation
   let isSpiralingIn = true;
   let introComplete = false;
   
-  // Create a timeline for the center point to pulse
-  gsap.timeline({repeat: -1})
-    .to(centerPoint.scale, {
-      x: 1.5, 
-      y: 1.5, 
-      z: 1.5, 
-      duration: 1,
-      ease: "power1.inOut"
-    })
-    .to(centerPoint.scale, {
-      x: 1, 
-      y: 1, 
-      z: 1, 
-      duration: 1,
-      ease: "power1.inOut"
-    });
+  // Add mouse event listeners for dragging
+  function onMouseDown(event) {
+    // Calculate mouse position in normalized device coordinates
+    mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+    mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+    
+    // Update the raycaster
+    raycaster.setFromCamera(mouse, camera);
+    
+    // Check for intersections with draggable objects
+    const intersects = raycaster.intersectObjects(scene.children);
+    
+    if (intersects.length > 0) {
+      // Find the first draggable object
+      for (let i = 0; i < intersects.length; i++) {
+        if (intersects[i].object.userData.isDraggable) {
+          // Disable controls while dragging
+          controls.enabled = false;
+          
+          // Set the selected object and enable dragging
+          selectedShape = intersects[i].object;
+          isDragging = true;
+          
+          // Set up the drag plane perpendicular to the camera
+          dragPlane.setFromNormalAndCoplanarPoint(
+            camera.getWorldDirection(dragPlane.normal).negate(),
+            selectedShape.position
+          );
+          
+          // Calculate the offset so the object doesn't jump to the mouse position
+          const intersection = new THREE.Vector3();
+          raycaster.ray.intersectPlane(dragPlane, intersection);
+          dragOffset.copy(selectedShape.position).sub(intersection);
+          
+          // Change material to indicate selection
+          selectedShape.userData.originalColor = selectedShape.material.color.clone();
+          selectedShape.material.color.set(0xffff00); // Yellow highlight
+          selectedShape.material.opacity = 0.9;
+          
+          break;
+        }
+      }
+    }
+  }
   
-  // Main animation loop
+function onMouseMove(event) {
+  if (isDragging && selectedShape) {
+    // Update mouse coordinates
+    mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+    mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+    
+    // Update the raycaster
+    raycaster.setFromCamera(mouse, camera);
+    
+    // Find the intersection with the drag plane
+    const intersection = new THREE.Vector3();
+    if (raycaster.ray.intersectPlane(dragPlane, intersection)) {
+      // Move the object to the intersection point plus the offset
+      selectedShape.position.copy(intersection.add(dragOffset));
+    }
+  }
+}
+  
+function onMouseUp() {
+  if (isDragging && selectedShape) {
+    // Reset material to original color
+    if (selectedShape.userData.originalColor) {
+      selectedShape.material.color.copy(selectedShape.userData.originalColor);
+    }
+    
+    // Re-enable controls
+    controls.enabled = true;
+    isDragging = false;
+    selectedShape = null;
+  }
+}
+  
+  // Add event listeners
+renderer.domElement.addEventListener('mousedown', onMouseDown);
+window.addEventListener('mousemove', onMouseMove);
+window.addEventListener('mouseup', onMouseUp);
+
 // Main animation loop
 function animate() {
-  time += 0.01;
+  introTime += 0.01;
   requestAnimationFrame(animate);
   
-  // Pulse the center point color
-  const hue = (time * 0.1) % 1;
-  centerPoint.material.color.setHSL(hue, 0.8, 0.5);
+  // Update controls
+  controls.update();
   
-  // Animate shapes
-  shapes.forEach((shape, index) => {
-    // Rotate each shape
-    shape.mesh.rotation.x += shape.rotationSpeed.x;
-    shape.mesh.rotation.y += shape.rotationSpeed.y;
-    shape.mesh.rotation.z += shape.rotationSpeed.z;
+  // Handle pre-explosion animations
+  if (isSpiralingIn && !hasExploded) {
+    // Adjust sucking speed to make it faster
+    const suckSpeed = 0.05; // Increase this for faster sucking
     
-    if (isSpiralingIn) {
-      // Move shapes toward center in a spiral
-      shape.moveSpeed = 3
-      const progress = Math.min(1, time * shape.moveSpeed * 0.05);
-      const spiralFactor = 1 - progress;
+    // Animate shapes
+    shapes.forEach((shape) => {
+      // Rotate each shape
+      shape.mesh.rotation.x += shape.rotationSpeed.x;
+      shape.mesh.rotation.y += shape.rotationSpeed.y;
+      shape.mesh.rotation.z += shape.rotationSpeed.z;
       
-      // Calculate position with added spiral movement
-      const angle = index * 0.4 + time * 0.2;
-      const radius = shape.initialX * spiralFactor;
-      const x = Math.cos(angle) * radius * spiralFactor;
-      const y = Math.sin(angle) * radius * spiralFactor;
-      const z = shape.initialZ * spiralFactor;
-      
-      // Set position
-      shape.mesh.position.x = x;
-      shape.mesh.position.y = y;
-      shape.mesh.position.z = z;
-      
-      // Scale down as they approach center
-      const scale = Math.max(0.1, 1 - progress * 0.8);
-      shape.mesh.scale.set(scale, scale, scale);
-      
-      // Make shapes more transparent as they approach center
-      shape.mesh.material.opacity = Math.max(0.1, 0.7 - progress * 0.6);
-    } else if (!introComplete) {
-      // Fling shapes towards the center of the screen
-      const flingSpeed = 5; // Adjust fling speed here
+      // Move shapes toward center faster
       const targetX = 0;
       const targetY = 0;
       const targetZ = 0;
-
-      // Calculate the direction vector towards the center
-      const directionX = targetX - shape.mesh.position.x;
-      const directionY = targetY - shape.mesh.position.y;
-      const directionZ = targetZ - shape.mesh.position.z;
       
-      // Normalize the direction and apply fling speed
-      const magnitude = Math.sqrt(directionX ** 2 + directionY ** 2 + directionZ ** 2);
-      const normalizedX = directionX / magnitude;
-      const normalizedY = directionY / magnitude;
-      const normalizedZ = directionZ / magnitude;
+      // Quick sucking motion toward center
+      shape.mesh.position.x += (targetX - shape.mesh.position.x) * suckSpeed;
+      shape.mesh.position.y += (targetY - shape.mesh.position.y) * suckSpeed;
+      shape.mesh.position.z += (targetZ - shape.mesh.position.z) * suckSpeed;
       
-      // Update the shape position
-      shape.mesh.position.x += normalizedX * flingSpeed;
-      shape.mesh.position.y += normalizedY * flingSpeed;
-      shape.mesh.position.z += normalizedZ * flingSpeed;
-
-      // Optionally add some rotation to make the fling more dynamic
-      shape.mesh.rotation.x += Math.random() * 0.2;
-      shape.mesh.rotation.y += Math.random() * 0.2;
-
-      // Reduce opacity and scale as they move toward the center
-      shape.mesh.material.opacity -= 0.02;
-      shape.mesh.scale.set(
-        Math.max(0.1, shape.mesh.scale.x - 0.02),
-        Math.max(0.1, shape.mesh.scale.y - 0.02),
-        Math.max(0.1, shape.mesh.scale.z - 0.02)
-      );
-    }
-  });
-  
-  // Check if all shapes have reached center
-  if (isSpiralingIn && time > 4) {
-    isSpiralingIn = false;
+      // Scale down as they approach center
+      const distanceToCenter = shape.mesh.position.distanceTo(new THREE.Vector3(0, 0, 0));
+      const scale = Math.max(0.1, 1 - (1 - distanceToCenter / 100) * 0.8);
+      shape.mesh.scale.set(scale, scale, scale);
+      
+      // Make shapes more transparent as they approach center
+      shape.mesh.material.opacity = Math.max(0.3, 0.7 - (1 - distanceToCenter / 100) * 3);
+    });
     
-    // Pulse the center point before explosion
-    gsap.to(centerPoint.scale, {
-      x: 100,
-      y: 100,
-      z: 100,
-      duration: 0.1,
-      ease: "power3.out",
-      onComplete: () => {
-        gsap.to(centerPoint.scale, {
-          x: 0.1,
-          y: 0.1,
-          z: 0.1,
-          duration: 0.1,
-          ease: "power3.in"
-        });
+    // Check if shapes are close enough to center to trigger explosion
+    let allShapesNearCenter = true;
+    shapes.forEach(shape => {
+      const distanceToCenter = shape.mesh.position.length();
+      if (distanceToCenter > 5) {
+        allShapesNearCenter = false;
+      }
+    });
+    
+    // Trigger explosion when all shapes are near center or after a time threshold
+  }
+  // Handle explosion animation
+  else if (hasExploded && !introComplete) {
+    // Animate the exploding shapes
+    shapes.forEach(shape => {
+      if (!isDragging || selectedShape !== shape.mesh) {
+        // Move in explosion direction
+        shape.mesh.position.x += shape.explosionDirection.x * shape.explosionSpeed;
+        shape.mesh.position.y += shape.explosionDirection.y * shape.explosionSpeed;
+        shape.mesh.position.z += shape.explosionDirection.z * shape.explosionSpeed;
+        
+        // Add some gravity effect
+        shape.explosionDirection.y -= 0.01;
+        
+        // Slow down over time
+        shape.explosionSpeed *= 0.99;
+        
+        // Rotate during explosion
+        shape.mesh.rotation.x += shape.rotationSpeed.x * 2;
+        shape.mesh.rotation.y += shape.rotationSpeed.y * 2;
+        shape.mesh.rotation.z += shape.rotationSpeed.z * 2;
+        
+        // Fade in during explosion
+        if (shape.mesh.material.opacity < 0.7) {
+          shape.mesh.material.opacity += 0.02;
+        }
+        
+        // Grow slightly during explosion
+        if (shape.mesh.scale.x < 1) {
+          const growFactor = 1.02;
+          shape.mesh.scale.x *= growFactor;
+          shape.mesh.scale.y *= growFactor;
+          shape.mesh.scale.z *= growFactor;
+        }
+      }
+    });
+    
+    // Mark intro as complete after all shapes have exploded
+    if (introTime > 8) {
+      introComplete = true;
+    }
+  }
+  // Handle post-explosion state (interactive mode)
+  else if (introComplete) {
+    // Keep shapes slowly rotating when not being dragged
+    shapes.forEach(shape => {
+      if (!isDragging || selectedShape !== shape.mesh) {
+        // Gentle rotation for idle shapes
+        shape.mesh.rotation.x += shape.rotationSpeed.x * 0.5;
+        shape.mesh.rotation.y += shape.rotationSpeed.y * 0.5;
+        shape.mesh.rotation.z += shape.rotationSpeed.z * 0.5;
+        
+        // Apply a very slight gravity
+        shape.mesh.position.y -= 0.01;
+        
+        // Add slight movement for a more dynamic scene
+        shape.mesh.position.x += Math.sin(introTime + shape.initialX) * 0.01;
+        shape.mesh.position.z += Math.cos(introTime + shape.initialZ) * 0.01;
       }
     });
   }
   
   renderer.render(scene, camera);
 }
-
-  
+window.addEventListener('load', () => {
+  setTimeout(animate, 1500);
+})
   // Handle window resize
-  function onWindowResize() {
-    camera.aspect = window.innerWidth / window.innerHeight;
-    camera.updateProjectionMatrix();
-    renderer.setSize(window.innerWidth, window.innerHeight);
-  }
-  
-  window.addEventListener('resize', onWindowResize);
-  
-  // Start animation
-  animate();
-  
-  // Handle click to proceed to main site
-  document.getElementById('intro-screen').addEventListener('click', () => {
-    // First explode the shapes
-    isSpiralingIn = false;
-    
-    // Then fade out the intro screen
+function onWindowResize() {
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+}
+
+window.addEventListener('resize', onWindowResize);
+}
+
+// Handle click to proceed to main site
+document.getElementById('intro-screen').addEventListener('click', () => {
+  triggerExplosion()
+    // If already exploded, just proceed to main page
     gsap.to('#intro-screen', {
       opacity: 0,
-      duration: 2,
-      delay: 0.5,
+      duration: 1,
       ease: "power2.inOut",
       onComplete: () => {
         document.getElementById('intro-screen').style.display = 'none';
@@ -369,9 +463,10 @@ function animate() {
         animate();
       }
     });
-  });
+  })
+function triggerExplosion() {
+  hasExploded = true;
 }
-
 // Call this function when the document is loaded
 document.addEventListener('DOMContentLoaded', () => {
   // Hide main page content initially
@@ -424,23 +519,99 @@ donut.castShadow = true;
 donut.receiveShadow = true;
 scene.add(donut);
 
-// Add small particles floating around
-const particlesGeometry = new THREE.BufferGeometry();
-const particlesCount = 200;
-const posArray = new Float32Array(particlesCount * 3);
+// Add scattered particles around the middle (no ring shape)
+const middleStarsGeometry = new THREE.BufferGeometry();
+const middleStarsCount = 1000; // Small number for subtle scattered particles around the middle
 
-for(let i = 0; i < particlesCount * 3; i++) {
-  posArray[i] = (Math.random() - 0.5) * 100;
+const middleStarsPosArray = new Float32Array(middleStarsCount * 3);
+const middleStarsColorArray = new Float32Array(middleStarsCount * 3);
+
+function getRandomColor() {
+  const colors = [
+    new THREE.Color(0x3d1e00), // Brown
+    new THREE.Color(0xffffff), // White
+    new THREE.Color(0x831aa5), // Purple
+    new THREE.Color(0x1f6b7a), // Teal
+  ];
+  return colors[Math.floor(Math.random() * colors.length)];
+}
+
+// Position particles scattered randomly around the middle
+for (let i = 0; i < middleStarsCount; i++) {
+  const x = (Math.random() - 0.5) * 200; // Random position in X (within range)
+  const y = (Math.random() - 0.5) * 200; // Random position in Y (within range)
+  const z = (Math.random() - 0.5) * 200; // Random position in Z (within range)
+
+  middleStarsPosArray[i * 3 + 0] = x;
+  middleStarsPosArray[i * 3 + 1] = y;
+  middleStarsPosArray[i * 3 + 2] = z;
+
+  const color = getRandomColor();
+  middleStarsColorArray[i * 3 + 0] = color.r;
+  middleStarsColorArray[i * 3 + 1] = color.g;
+  middleStarsColorArray[i * 3 + 2] = color.b;
+}
+
+middleStarsGeometry.setAttribute('position', new THREE.BufferAttribute(middleStarsPosArray, 3));
+middleStarsGeometry.setAttribute('color', new THREE.BufferAttribute(middleStarsColorArray, 3));
+
+const middleStarsMaterial = new THREE.PointsMaterial({
+  size: 0.15,  // You can adjust the size of the particles here
+  vertexColors: true
+});
+
+const middleStarsMesh = new THREE.Points(middleStarsGeometry, middleStarsMaterial);
+scene.add(middleStarsMesh);
+
+// Main ring particles setup (previous code you provided for particles in the ring)
+const particlesGeometry = new THREE.BufferGeometry();
+const particlesCount = 400;
+const radius = 50;
+
+const posArray = new Float32Array(particlesCount * 3);
+const colorArray = new Float32Array(particlesCount * 3);
+
+// Position particles in a circular ring
+for (let i = 0; i < particlesCount; i++) {
+  const angle = (i / particlesCount) * Math.PI * 2;
+  const x = radius * Math.cos(angle);
+  const z = radius * Math.sin(angle);
+  const y = (Math.random() - 0.5) * 10; // Small vertical variation
+
+  posArray[i * 3 + 0] = x;
+  posArray[i * 3 + 1] = y;
+  posArray[i * 3 + 2] = z;
+
+  const color = getRandomColor();
+  colorArray[i * 3 + 0] = color.r;
+  colorArray[i * 3 + 1] = color.g;
+  colorArray[i * 3 + 2] = color.b;
 }
 
 particlesGeometry.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
+particlesGeometry.setAttribute('color', new THREE.BufferAttribute(colorArray, 3));
+
 const particlesMaterial = new THREE.PointsMaterial({
   size: 0.2,
-  color: 0xffffff
+  vertexColors: true
 });
 
 const particlesMesh = new THREE.Points(particlesGeometry, particlesMaterial);
 scene.add(particlesMesh);
+
+// Animate both the rings
+function animateRing() {
+  requestAnimationFrame(animateRing);
+
+  // Rotate the particles in the ring
+  particlesMesh.rotation.y += 0.00025; // Adjust speed here
+  middleStarsMesh.rotation.y += 0.00025; // Slower rotation for middle scattered particles
+
+  renderer.render(scene, camera);
+}
+animateRing();
+
+
 
 // Enhanced lighting setup
 const ambientLight = new THREE.AmbientLight(0x404040, 2);
@@ -534,59 +705,184 @@ function tween(start, end, t, easingFn) {
   return start + (end - start) * easingFn(t);
 }
 
-let stars = []; // Array to hold all stars for periodic glow updates
-
-function addStars() {
-  const geometry = new THREE.SphereGeometry(0.05, 20, 20);
-
-  function getRandomColor() {
-    const colors = [
-      new THREE.Color(0x0000ff), // Blue
-      new THREE.Color(0xffffff), // White
-      new THREE.Color(0x831aa5), // Purple
-      new THREE.Color(0xbf1b1b),
-    ];
-    return colors[Math.floor(Math.random() * colors.length)];
+// Use instanced mesh for better performance
+function createStarField() {
+  const starCount = 1000;
+  
+  // Use low-poly geometry for stars
+  const geometry = new THREE.SphereGeometry(0.05, 8, 6);
+  
+  // Create a material that can handle color changes
+  const starMaterial = new THREE.MeshStandardMaterial({
+    emissive: 0xffffff,
+    emissiveIntensity: 1,
+    metalness: 0.3,
+    roughness: 0.2,
+    vertexColors: true,
+  });
+  
+  // Create instanced mesh
+  const instancedMesh = new THREE.InstancedMesh(
+    geometry,
+    starMaterial,
+    starCount
+  );
+  
+  // Define star colors
+  const colors = [
+    new THREE.Color(0xff0000), // Red
+    new THREE.Color(0x0000ff), // Blue
+    new THREE.Color(0x831aa5), // Purple
+    new THREE.Color(0xffffff)  // White
+  ];
+  
+  const dummy = new THREE.Object3D();
+  
+  // Create arrays to store star properties for animation
+  const starProperties = [];
+  
+  for (let i = 0; i < starCount; i++) {
+    // Set random position in a larger sphere around the camera
+    const radius = 50 + Math.random() * 150; // Spread stars further out
+    const theta = Math.random() * Math.PI * 2;
+    const phi = Math.random() * Math.PI;
+    
+    const x = radius * Math.sin(phi) * Math.cos(theta);
+    const y = radius * Math.sin(phi) * Math.sin(theta);
+    const z = radius * Math.cos(phi);
+    
+    dummy.position.set(x, y, z);
+    
+    // Random initial scale for twinkling effect
+    const initialScale = 0.5 + Math.random() * 1.5;
+    dummy.scale.set(initialScale, initialScale, initialScale);
+    
+    dummy.updateMatrix();
+    instancedMesh.setMatrixAt(i, dummy.matrix);
+    
+    // Store properties for animation
+    starProperties.push({
+      position: { x, y, z },
+      originalScale: initialScale,
+      twinkleSpeed: 0.5 + Math.random() * 2,
+      twinklePhase: Math.random() * Math.PI * 2,
+      colorIndex: Math.floor(Math.random() * colors.length),
+      colorTransitionSpeed: 0.2 + Math.random() * 0.8
+    });
+    
+    // Set initial color
+    instancedMesh.setColorAt(i, colors[starProperties[i].colorIndex]);
   }
-
-  const material = new THREE.MeshStandardMaterial({
-    color: getRandomColor(),
-    emissive: getRandomColor(),
-    emissiveIntensity: 3,
-    metalness: 0.5,
-    roughness: 0.2
-  });
-
-  const star = new THREE.Mesh(geometry, material);
-  const x = THREE.MathUtils.randFloatSpread(100);  // Spread in X
-  const y = THREE.MathUtils.randFloatSpread(100);  // Spread in Y
-  const z = THREE.MathUtils.randFloatSpread(200);  // Spread in Z
   
-  star.position.set(x, y, z);
-
-  stars.push(star); // Store stars in array for glow effect
+  instancedMesh.instanceColor = new THREE.InstancedBufferAttribute(new Float32Array(starCount * 3), 3);
+  instancedMesh.geometry.setAttribute('instanceColor', instancedMesh.instanceColor);
   
-  scene.add(star);
+  
+  // Make stars persistent by adding to the scene directly
+  scene.add(instancedMesh);
+  
+  return { mesh: instancedMesh, properties: starProperties, colors: colors };
 }
 
-// Create 800 stars
-Array(1000).fill().forEach(addStars);
+createStarField()
+// Create stars (this should remain where it is)
+const { mesh: stars, positions } = createStarField();
+// Create a new animation function to handle the twinkling and color changes
+function animateStars(stars, time) {
+  const { mesh, properties, colors } = stars;
+  const dummy = new THREE.Object3D();
+  const color = new THREE.Color();
+  
+  for (let i = 0; i < properties.length; i++) {
+    const star = properties[i];
+    
+    // Position
+    dummy.position.set(star.position.x, star.position.y, star.position.z);
+    
+    // Twinkling effect - scale pulsing
+    const twinkleFactor = 0.3 * Math.sin(time * star.twinkleSpeed + star.twinklePhase) + 0.7;
+    const scale = star.originalScale * twinkleFactor;
+    dummy.scale.set(scale, scale, scale);
+    
+    dummy.updateMatrix();
+    mesh.setMatrixAt(i, dummy.matrix);
+    
+    // Color transition
+    if (Math.random() < 0.005) { // Occasionally change color
+      star.colorIndex = (star.colorIndex + 1) % colors.length;
+    }
+    
+    // Get color and possibly blend between colors for smooth transition
+    const currentColor = colors[star.colorIndex];
+    color.copy(currentColor);
+    
+    // Apply brightness variation for twinkling
+    const brightness = 0.7 + 0.3 * Math.sin(time * star.twinkleSpeed * 1.3 + star.twinklePhase);
+    color.multiplyScalar(brightness);
+    
+    mesh.setColorAt(i, color);
+  }
+  
+  mesh.instanceMatrix.needsUpdate = true;
+  mesh.instanceColor.needsUpdate = true;
+}
 
-// Update function to animate stars' emissive glow
+// Shader-based glow animation
 function animateGlow() {
-  const time = performance.now() * 0.001; // Get time in seconds for animation
+  const currentTime = performance.now() * 0.001;
   
-  stars.forEach(star => {
-    const glowIntensity = Math.sin(time * 8 + star.position.x * 0.1) * 0.5 + 0.5; // Sine wave effect for glow
-    star.material.emissiveIntensity = glowIntensity;
-  });
-
-  requestAnimationFrame(animateGlow); // Keep updating the glow effect
+  // Update the uniforms for the shader instead of individual materials
+  if (stars.material.userData.glowShader) {
+    stars.material.userData.glowShader.uniforms.time.value = currentTime;
+    return;
+  }
+  
+  // One-time initialization of the glow shader
+  const glowShader = {
+    uniforms: {
+      time: { value: currentTime }
+    },
+    vertexShader: `
+      varying vec3 vPosition;
+      
+      void main() {
+        vPosition = position;
+        gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+      }
+    `,
+    fragmentShader: `
+      uniform float time;
+      varying vec3 vPosition;
+      
+      void main() {
+        vec3 baseColor = gl_FragColor.rgb;
+        float glowIntensity = sin(time * 8.0 + vPosition.x * 0.1) * 0.5 + 0.5;
+        gl_FragColor.rgb = baseColor * (glowIntensity * 2.0 + 0.5);
+      }
+    `
+  };
+  
+  stars.material.onBeforeCompile = shader => {
+    shader.uniforms.time = glowShader.uniforms.time;
+    shader.vertexShader = glowShader.vertexShader;
+    shader.fragmentShader = glowShader.fragmentShader;
+    stars.material.userData.glowShader = shader;
+  };
+  
+  stars.material.needsUpdate = true;
 }
 
-// Start the periodic glow effect
-animateGlow();
+// For browser with less WebGL capabilities, here's a simpler approach with better performance
+function simpleAnimateGlow() {
+  const currentTime = performance.now() * 0.001;
+  
+  // Only update the material's emissive intensity - not each individual star
+  const glowIntensity = Math.sin(currentTime) * 0.5 + 1.0;
+  stars.material.emissiveIntensity = glowIntensity;
+}
 
+// Use the appropriate animation function based on complexity
+const animationFunction = THREE.REVISION >= 125 ? animateGlow : simpleAnimateGlow;
 
 // Enhanced animation function
 function animateState(targetState, duration = 2.5) {
@@ -873,13 +1169,15 @@ function animateLights(time) {
   pointLight2.position.z = -20 * Math.sin(time * 0.15);
 }
 
-// Enhanced render loop
-let time = 0;
+const starField = createStarField();
+
+// Animation loop for the main site
 function animate() {
-  time += 0.01;
+  animationFunction(); // Call the appropriate glow animation function
   requestAnimationFrame(animate);
+  time += 0.01;
   controls.update();
-  
+  animateStars(starField, time);
   // Animate particles
   animateParticles();
   

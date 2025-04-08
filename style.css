@@ -32,7 +32,7 @@ canvas {
   overflow: hidden;
 }
 .intro-title {
-  font-size: 5rem;
+  font-size: clamp(2.5rem, 6vw, 5rem);
   font-weight: bold;
   opacity: 0;
   letter-spacing: 0.5rem;
@@ -40,7 +40,7 @@ canvas {
 }
 .intro-subtitle {
   margin-top: 2rem;
-  font-size: 1.5rem;
+  font-size: clamp(0.25rem, 6vw, 1.5rem);
   opacity: 0;
   z-index: 10;
 }
