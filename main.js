@@ -1,7 +1,15 @@
-import * as THREE from 'three';
-import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
-import { gsap } from 'gsap';
-import { Draggable } from 'gsap/Draggable';  // Import Draggable plugin
+// Import Three.js from CDN
+import * as THREE from 'https://cdnjs.cloudflare.com/ajax/libs/three.js/0.174.0/three.module.js';
+
+// Import OrbitControls from Three.js examples
+import { OrbitControls } from 'https://cdnjs.cloudflare.com/ajax/libs/three.js/0.174.0/examples/js/controls/OrbitControls.js';
+
+// Import GSAP from CDN
+import { gsap } from 'https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.7/gsap.min.js';
+
+// Import GSAP Draggable plugin from CDN
+import { Draggable } from 'https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.7/Draggable.min.js';
+
 
 // Register the GSAP Draggable plugin
 gsap.registerPlugin(Draggable);
