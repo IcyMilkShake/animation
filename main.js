@@ -5,10 +5,10 @@ import * as THREE from 'https://cdnjs.cloudflare.com/ajax/libs/three.js/0.174.0/
 import { OrbitControls } from 'https://unpkg.com/three@0.174.0/examples/jsm/controls/OrbitControls.js';
 
 // Import GSAP from jsDelivr instead of unpkg
-import { gsap } from 'https://cdn.jsdelivr.net/npm/gsap@3.12.7/dist/gsap.esm.js';
+import { gsap } from 'https://unpkg.com/gsap@3.12.7/gsap.esm.js';
 
-// Import GSAP Draggable plugin from jsDelivr (ES module version)
-import { Draggable } from 'https://cdn.jsdelivr.net/npm/gsap@3.12.7/dist/Draggable.js';
+// Import GSAP Draggable plugin from unpkg – using the ES module version
+import { Draggable } from 'https://unpkg.com/gsap@3.12.7/Draggable.js';
 
 // Register the GSAP Draggable plugin
 gsap.registerPlugin(Draggable);
