@@ -1,20 +1,17 @@
-// Import Three.js from CDN using an absolute URL (this is used by import map for bare "three" imports)
+// Import Three.js from CDN (no change here)
 import * as THREE from 'https://cdnjs.cloudflare.com/ajax/libs/three.js/0.174.0/three.module.js';
 
-// Import OrbitControls from unpkg (using an absolute URL)
+// Import OrbitControls from unpkg (ensuring ESM version)
 import { OrbitControls } from 'https://unpkg.com/three@0.174.0/examples/jsm/controls/OrbitControls.js';
 
-// Import GSAP from CDN
-import { gsap } from 'https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.7/gsap.min.js';
+// Import GSAP from unpkg for consistency
+import { gsap } from 'https://unpkg.com/gsap@3.12.7/gsap.min.js';
 
-// Import GSAP Draggable plugin from CDN
-import { Draggable } from 'https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.7/Draggable.min.js';
+// Import GSAP Draggable plugin from unpkg (this provides the named export)
+import { Draggable } from 'https://unpkg.com/gsap@3.12.7/Draggable.js';
 
 // Register the GSAP Draggable plugin
 gsap.registerPlugin(Draggable);
-
-// Rest of your code...
-
 
 // Initialize time variable globally
 let time = 0;
