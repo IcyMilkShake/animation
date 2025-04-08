@@ -100,6 +100,23 @@ canvas {
   transition: transform 0.5s ease, box-shadow 0.5s ease;
 }
 
+.about-content-container {
+  background: rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(2px);
+  border-radius: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  padding: 30px;
+  margin-top: 35%;
+  max-width: 750px;
+  width: 80%;
+  max-height: 15%;
+  padding-top: 0%;
+  padding-bottom: 3%;
+  box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+  transform: translateY(0);
+  transition: transform 0.5s ease, box-shadow 0.5s ease;
+}
+
 /* Hover effect */
 .content-container:hover {
   transform: translateY(-5px);
@@ -326,6 +343,24 @@ a:hover {
     font-size: clamp(0.9rem, 8vw, 1rem);
     padding: 10px 25px;
   }
+  .about-content-container {
+    margin-top: 20%;
+    max-width: 90%;
+    max-height: none;
+    padding: 20px;
+  }
+
+  .about-interaction-hint {
+    font-size: 0.8rem;
+    flex-direction: row;
+    margin-top: 2rem;
+    padding: 0.5rem;
+  }
+
+  .about-interaction-hint svg {
+    width: 16px;
+    height: 16px;
+  }
 }
 
 @media (max-width: 480px) {
@@ -350,4 +385,234 @@ a:hover {
     font-size: clamp(0.8rem, 10vw, 1rem);
     padding: 8px 20px;
   }
+  .about-content-container {
+    margin-top: 15%;
+    padding: 15px;
+    font-size: 0.95rem;
+  }
+}
+/* Sci-fi Text Box Styles */
+.sci-fi-text-containers {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 100;
+}
+
+.sci-fi-text-box {
+  position: absolute;
+  background-color: rgba(0, 10, 30, 0.8);
+  color: #0ff;
+  padding: 20px;
+  border-radius: 2px;
+  font-family: 'Poppins', sans-serif;
+  box-shadow: 0 0 20px rgba(0, 255, 255, 0.5);
+  pointer-events: auto;
+  opacity: 0;
+  transform: scale(0.8);
+  transition: opacity 0.4s ease, transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  overflow: hidden;
+}
+
+.sci-fi-text-box.active {
+  opacity: 1;
+  transform: translate(-50%, -50%) scale(1);
+}
+
+.sci-fi-content {
+  position: relative;
+  z-index: 2;
+}
+
+.sci-fi-text-box p {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.5;
+  color: #9ff;
+  font-weight: 300;
+  letter-spacing: 0.5px;
+}
+
+.sci-fi-close-btn {
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  width: 20px;
+  height: 20px;
+  background-color: rgba(0, 255, 255, 0.2);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-size: 16px;
+  cursor: pointer;
+  z-index: 3;
+  transition: background-color 0.2s;
+}
+
+.sci-fi-close-btn:hover {
+  background-color: rgba(255, 50, 50, 0.6);
+}
+
+/* Glowing border effects */
+.sci-fi-border {
+  position: absolute;
+  background-color: #0ff;
+  opacity: 0.7;
+  z-index: 1;
+}
+
+.sci-fi-border-top, .sci-fi-border-bottom {
+  height: 1px;
+  width: 100%;
+  left: 0;
+  animation: glowPulse 2s infinite alternate;
+}
+
+.sci-fi-border-left, .sci-fi-border-right {
+  width: 1px;
+  height: 100%;
+  top: 0;
+  animation: glowPulse 2s infinite alternate-reverse;
+}
+
+.sci-fi-border-top {
+  top: 0;
+}
+
+.sci-fi-border-bottom {
+  bottom: 0;
+}
+
+.sci-fi-border-left {
+  left: 0;
+}
+
+.sci-fi-border-right {
+  right: 0;
+}
+
+/* Corner decorations */
+.sci-fi-corner {
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  z-index: 1;
+}
+
+.sci-fi-corner-top-left {
+  top: 0;
+  left: 0;
+  border-top: 1px solid #0ff;
+  border-left: 1px solid #0ff;
+}
+
+.sci-fi-corner-top-right {
+  top: 0;
+  right: 0;
+  border-top: 1px solid #0ff;
+  border-right: 1px solid #0ff;
+}
+
+.sci-fi-corner-bottom-left {
+  bottom: 0;
+  left: 0;
+  border-bottom: 1px solid #0ff;
+  border-left: 1px solid #0ff;
+}
+
+.sci-fi-corner-bottom-right {
+  bottom: 0;
+  right: 0;
+  border-bottom: 1px solid #0ff;
+  border-right: 1px solid #0ff;
+}
+
+/* Animations */
+@keyframes glowPulse {
+  0% {
+    box-shadow: 0 0 5px rgba(0, 255, 255, 0.5);
+    opacity: 0.5;
+  }
+  100% {
+    box-shadow: 0 0 15px rgba(0, 255, 255, 0.9);
+    opacity: 0.9;
+  }
+}
+@keyframes pulse {
+  0% {
+    opacity: 0.7;
+  }
+  50% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0.7;
+  }
+}
+
+.about-interaction-hint {
+  display: flex;
+  align-items: center;
+  color: #ccc;
+  margin-top: 3rem;
+  padding: 0.5rem 1rem;
+  background-color: rgba(0, 30, 60, 0.5);
+  border-radius: 20px;
+  font-size: 0.9rem;
+}
+
+.about-interaction-hint svg {
+  margin-right: 8px;
+  color: #0ff;
+}
+/* Animation for hovering over clickable objects */
+.planet-hover-indicator {
+  position: absolute;
+  width: 20px;
+  height: 20px;
+  background-color: transparent;
+  border: 2px solid rgba(0, 255, 255, 0.7);
+  border-radius: 50%;
+  pointer-events: none;
+  opacity: 0;
+  transform: translate(-50%, -50%) scale(0.5);
+  transition: opacity 0.3s, transform 0.3s;
+}
+
+.planet-hover-indicator.visible {
+  opacity: 1;
+  transform: translate(-50%, -50%) scale(1);
+}
+
+/* Enhance clickable objects with hover effect */
+.clickable-indicator {
+  position: fixed;
+  pointer-events: none;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 2px solid #0ff;
+  opacity: 0;
+  transition: opacity 0.3s;
+  z-index: 1000;
+  transform: translate(-50%, -50%);
+}
+
+.clickable-indicator.visible {
+  opacity: 1;
+}
+
+/* Make the 3D canvas more prominent in the about section */
+#about + #bg {
+  z-index: 1;
+}
+
+/* Adjust section scrolling behavior for better 3D interaction */
+#about.section {
+  z-index: 2;
 }

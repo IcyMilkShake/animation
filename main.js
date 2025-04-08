@@ -187,14 +187,14 @@ function createIntroScreen() {
         y: (Math.random() - 0.5) * 0.03,
         z: (Math.random() - 0.5) * 0.03
       },
-      moveSpeed: 0.5 + Math.random() * 0.5,
+      moveSpeed: Math.random(),
       // Add explosion properties
       explosionDirection: new THREE.Vector3(
         (Math.random() - 0.5) * 2,
         (Math.random() - 0.5) * 2,
         (Math.random() - 0.5) * 2
       ).normalize(),
-      explosionSpeed: 2 + Math.random() * 3,
+      explosionSpeed: 0.75 + Math.random(),
       isExploded: false
     });
   }
@@ -650,7 +650,7 @@ camera.position.set(0, 0, 30);
 // Define more dynamic animation states for each section
 const states = {
   home: {
-    cameraZ: 100,
+    cameraZ: 175,
     cameraX: 0,
     cameraY: 0,
     cameraRotationY: 0, // Camera looking straight ahead
@@ -659,7 +659,7 @@ const states = {
     donutPosition: { x: 0, y: 0, z: 0 }
   },
   about: {
-    cameraZ: 40,
+    cameraZ: 80,
     cameraX: 0,
     cameraY: 0,
     cameraRotationY: 0, // Camera looking straight ahead
@@ -1178,9 +1178,11 @@ function animate() {
   time += 0.01;
   controls.update();
   animateStars(starField, time);
+
+  animateOrbitalPlanets(time);
   // Animate particles
   animateParticles();
-  
+  enhanceAboutSection()
   // Animate lights
   animateLights(time);
   
@@ -1233,6 +1235,490 @@ document.addEventListener('DOMContentLoaded', function() {
     });
   });
 });
+function createOrbitalPlanets() {
+  const planets = [];
+  const planetCount = 5; // Number of planets to create
+  
+  // Colors for the planets
+  const planetColors = [
+    0xf94144, // Red
+    0xf8961e, // Orange
+    0x90be6d, // Green
+    0x577590, // Blue
+    0x43aa8b  // Teal
+  ];
+  
+  // Information for each planet
+  const planetInfo = [
+    "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Vivamus at felis vitae nisi scelerisque sodales.",
+    "Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.",
+    "Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.",
+    "Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.",
+    "Sed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium doloremque laudantium."
+  ];
+  
+  // Create planets with different orbit properties
+  for (let i = 0; i < planetCount; i++) {
+    // Create planet geometry - vary the sizes
+    const planetSize = 0.8 + Math.random() * 1.2;
+    const planetGeometry = new THREE.SphereGeometry(planetSize, 16, 16);
+    
+    // Create planet material with glowing effect
+    const planetMaterial = new THREE.MeshPhysicalMaterial({
+      color: planetColors[i],
+      emissive: planetColors[i],
+      emissiveIntensity: 0.3,
+      roughness: 0.7,
+      metalness: 0.3,
+    });
+    
+    // Create planet mesh
+    const planet = new THREE.Mesh(planetGeometry, planetMaterial);
+    
+    // Set up orbital properties
+    const orbitRadius = 15 + i * 5; // Increasing orbit radius
+    const orbitSpeed = 0.0003 + (planetCount - i) * 0.0002; // Different speeds
+    const orbitPhase = Math.random() * Math.PI * 2; // Random starting position
+    const orbitTilt = Math.random() * 0.5; // Random orbit tilt
+    
+    // Add info and properties to the planet
+    planet.userData = {
+      orbitRadius,
+      orbitSpeed,
+      orbitPhase,
+      orbitTilt,
+      info: planetInfo[i],
+      isShowingInfo: false,
+      clickable: true
+    };
+    
+    // Add to scene
+    scene.add(planet);
+    planets.push(planet);
+  }
+  
+  return planets;
+}
+
+// Create orbital planets
+const orbitalPlanets = createOrbitalPlanets();
+
+// Make the donut clickable
+donut.userData = { 
+  clickable: true, 
+  info: "Hi, I'm Pat. I'm a person with a passion for 3D development and interactive design. Click on the orbiting planets to learn more about me.",
+  isShowingInfo: false
+};
+
+// Add a raycaster for clicking objects
+const raycaster = new THREE.Raycaster();
+const mouse = new THREE.Vector2();
+
+// Create a div for sci-fi text boxes
+const textBoxContainer = document.createElement('div');
+textBoxContainer.className = 'sci-fi-text-containers';
+document.body.appendChild(textBoxContainer);
+
+// Function to create a sci-fi text box
+function createSciFiTextBox(info, position, isDonut = false) {
+  // Calculate screen position from 3D position
+  const screenPosition = new THREE.Vector3(position.x, position.y, position.z);
+  screenPosition.project(camera);
+  
+  const x = (screenPosition.x * 0.5 + 0.5) * window.innerWidth;
+  const y = (screenPosition.y * -0.5 + 0.5) * window.innerHeight;
+  
+  // Create container if it doesn't exist
+  let textBox = document.querySelector(`.sci-fi-text-box[data-id="${isDonut ? 'donut' : position.objectIndex}"]`);
+  
+  if (!textBox) {
+    textBox = document.createElement('div');
+    textBox.className = 'sci-fi-text-box';
+    textBox.setAttribute('data-id', isDonut ? 'donut' : position.objectIndex);
+    textBoxContainer.appendChild(textBox);
+    
+    // Add close button
+    const closeBtn = document.createElement('div');
+    closeBtn.className = 'sci-fi-close-btn';
+    closeBtn.innerHTML = '×';
+    closeBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      textBox.classList.remove('active');
+      setTimeout(() => {
+        textBox.remove();
+      }, 500);
+      
+      // Reset the isShowingInfo flag on the object
+      if (isDonut) {
+        donut.userData.isShowingInfo = false;
+      } else {
+        orbitalPlanets[position.objectIndex].userData.isShowingInfo = false;
+      }
+    });
+    
+    textBox.appendChild(closeBtn);
+    
+    // Create content container
+    const contentDiv = document.createElement('div');
+    contentDiv.className = 'sci-fi-content';
+    textBox.appendChild(contentDiv);
+    
+    // Add glowing border effect elements
+    const borders = ['top', 'right', 'bottom', 'left'];
+    borders.forEach(border => {
+      const borderElem = document.createElement('div');
+      borderElem.className = `sci-fi-border sci-fi-border-${border}`;
+      textBox.appendChild(borderElem);
+    });
+    
+    // Add corner elements
+    const corners = ['top-left', 'top-right', 'bottom-right', 'bottom-left'];
+    corners.forEach(corner => {
+      const cornerElem = document.createElement('div');
+      cornerElem.className = `sci-fi-corner sci-fi-corner-${corner}`;
+      textBox.appendChild(cornerElem);
+    });
+  }
+  
+  // Update content and position
+  const contentDiv = textBox.querySelector('.sci-fi-content');
+  contentDiv.innerHTML = `<p>${info}</p>`;
+  
+  // Position the box
+  textBox.style.left = `${x}px`;
+  textBox.style.top = `${y}px`;
+  
+  // Size based on content and position
+  if (isDonut) {
+    textBox.style.width = '300px';
+    textBox.style.height = 'auto';
+    // Center donut box
+    textBox.style.transform = 'translate(-50%, -50%)';
+  } else {
+    textBox.style.width = '250px';
+    textBox.style.height = 'auto';
+    // Offset planet boxes to prevent overlapping with planet
+    textBox.style.transform = 'translate(20px, -100%)';
+  }
+  
+  // Animate in
+  setTimeout(() => {
+    textBox.classList.add('active');
+  }, 10);
+  
+  return textBox;
+}
+function createClickableIndicator() {
+  const indicator = document.createElement('div');
+  indicator.className = 'clickable-indicator';
+  document.body.appendChild(indicator);
+  return indicator;
+}
+
+const clickIndicator = createClickableIndicator();
+
+// Function to check if mouse is over a clickable object
+function checkMouseOverObjects(event) {
+  // Only show hover effects in the about section
+  const currentSection = document.querySelector('.section:nth-child(' + (currentSectionIndex + 1) + ')');
+  if (!currentSection || currentSection.id !== 'about') {
+    clickIndicator.classList.remove('visible');
+    return;
+  }
+  
+  // Calculate mouse position
+  mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+  mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+  
+  // Update the raycaster
+  raycaster.setFromCamera(mouse, camera);
+  
+  // Check for intersections with clickable objects
+  const clickableObjects = [donut, ...orbitalPlanets];
+  const intersects = raycaster.intersectObjects(clickableObjects);
+  
+  if (intersects.length > 0) {
+    // Mouse is over a clickable object
+    const object = intersects[0].object;
+    
+    // Only proceed if the object is clickable
+    if (object.userData.clickable) {
+      // Position the indicator at mouse position
+      clickIndicator.style.left = event.clientX + 'px';
+      clickIndicator.style.top = event.clientY + 'px';
+      clickIndicator.classList.add('visible');
+      
+      // Change cursor to pointer
+      document.body.style.cursor = 'pointer';
+      
+      // Highlight the object
+      if (!object.userData.isHighlighted) {
+        object.userData.isHighlighted = true;
+        object.userData.originalEmissiveIntensity = object.material.emissiveIntensity || 0;
+        
+        // Increase emissive intensity for glow effect
+        if (object.material.emissive) {
+          gsap.to(object.material, {
+            emissiveIntensity: Math.max(0.8, object.userData.originalEmissiveIntensity * 2),
+            duration: 0.3
+          });
+        }
+        
+        // Subtle scale animation
+        gsap.to(object.scale, {
+          x: object.scale.x * 1.1,
+          y: object.scale.y * 1.1,
+          z: object.scale.z * 1.1,
+          duration: 0.3
+        });
+      }
+    }
+  } else {
+    // Mouse is not over any clickable object
+    clickIndicator.classList.remove('visible');
+    document.body.style.cursor = 'default';
+    
+    // Reset all highlighted objects
+    const clickableObjects = [donut, ...orbitalPlanets];
+    clickableObjects.forEach(object => {
+      if (object.userData.isHighlighted) {
+        object.userData.isHighlighted = false;
+        
+        // Reset emissive intensity
+        if (object.material.emissive && object.userData.originalEmissiveIntensity !== undefined) {
+          gsap.to(object.material, {
+            emissiveIntensity: object.userData.originalEmissiveIntensity,
+            duration: 0.3
+          });
+        }
+        
+        // Reset scale
+        gsap.to(object.scale, {
+          x: object.scale.x / 1.1,
+          y: object.scale.y / 1.1,
+          z: object.scale.z / 1.1,
+          duration: 0.3
+        });
+      }
+    });
+  }
+}
+
+// Add event listener for mouse movement
+window.addEventListener('mousemove', checkMouseOverObjects);
+
+// Enhance the about section state
+states.about = {
+  cameraZ: 50,  // Closer to see the planets better
+  cameraX: 0,
+  cameraY: 0,
+  cameraRotationY: 0,
+  donutScale: 1.2,  // Slightly larger donut to make it more prominent
+  donutRotation: { x: Math.PI / 4, y: Math.PI / 4, z: 0 },
+  donutPosition: { x: 0, y: 0, z: 0 }  // Centered position
+};
+
+// Special handling for the about section
+function enhanceAboutSection() {
+  const aboutSection = document.getElementById('about');
+  
+  // Check if we're currently on the about section
+  if (aboutSection && currentSectionIndex === Array.from(sections).findIndex(section => section.id === 'about')) {
+    // Make planets more visible
+    orbitalPlanets.forEach(planet => {
+      if (!planet.userData.enhancedForAboutSection) {
+        planet.userData.enhancedForAboutSection = true;
+        
+        // Store original values
+        planet.userData.originalMaterialValues = {
+          emissiveIntensity: planet.material.emissiveIntensity || 0,
+          opacity: planet.material.opacity || 1
+        };
+        
+        // Enhance visibility
+        if (planet.material.emissive) {
+          planet.material.emissiveIntensity = 0.6;
+        }
+        
+        // Ensure full opacity
+        if (planet.material.transparent) {
+          planet.material.opacity = 1;
+        }
+      }
+    });
+    
+    // Make donut more prominent
+    if (!donut.userData.enhancedForAboutSection) {
+      donut.userData.enhancedForAboutSection = true;
+      
+      // Store original values
+      donut.userData.originalMaterialValues = {
+        transmission: donut.material.transmission || 0,
+        clearcoat: donut.material.clearcoat || 0,
+        emissiveIntensity: donut.material.emissiveIntensity || 0
+      };
+      
+      // Enhance visibility
+      donut.material.transmission = 0.9;
+      donut.material.clearcoat = 1;
+      if (donut.material.emissive) {
+        donut.material.emissiveIntensity = 0.15;
+      }
+    }
+  } else {
+    // Reset enhancements if we're not on the about section
+    orbitalPlanets.forEach(planet => {
+      if (planet.userData.enhancedForAboutSection) {
+        planet.userData.enhancedForAboutSection = false;
+        
+        // Restore original values
+        if (planet.userData.originalMaterialValues) {
+          if (planet.material.emissive && planet.userData.originalMaterialValues.emissiveIntensity !== undefined) {
+            planet.material.emissiveIntensity = planet.userData.originalMaterialValues.emissiveIntensity;
+          }
+          
+          if (planet.material.transparent && planet.userData.originalMaterialValues.opacity !== undefined) {
+            planet.material.opacity = planet.userData.originalMaterialValues.opacity;
+          }
+        }
+      }
+    });
+    
+    // Reset donut
+    if (donut.userData.enhancedForAboutSection) {
+      donut.userData.enhancedForAboutSection = false;
+      
+      // Restore original values
+      if (donut.userData.originalMaterialValues) {
+        if (donut.userData.originalMaterialValues.transmission !== undefined) {
+          donut.material.transmission = donut.userData.originalMaterialValues.transmission;
+        }
+        
+        if (donut.userData.originalMaterialValues.clearcoat !== undefined) {
+          donut.material.clearcoat = donut.userData.originalMaterialValues.clearcoat;
+        }
+        
+        if (donut.material.emissive && donut.userData.originalMaterialValues.emissiveIntensity !== undefined) {
+          donut.material.emissiveIntensity = donut.userData.originalMaterialValues.emissiveIntensity;
+        }
+      }
+    }
+  }
+}
+// Handle clicks on objects
+function onMouseClick(event) {
+  // Calculate mouse position in normalized device coordinates
+  mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+  mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+  
+  // Update the raycaster
+  raycaster.setFromCamera(mouse, camera);
+  
+  // Check if the donut or any planets were clicked
+  const clickableObjects = [donut, ...orbitalPlanets];
+  const intersects = raycaster.intersectObjects(clickableObjects);
+  
+  if (intersects.length > 0) {
+    const clickedObject = intersects[0].object;
+    
+    // Only proceed if the object is clickable
+    if (clickedObject.userData.clickable) {
+      // Toggle the info display
+      clickedObject.userData.isShowingInfo = !clickedObject.userData.isShowingInfo;
+      
+      // Check if it's the donut or a planet
+      const isDonut = clickedObject === donut;
+      
+      if (clickedObject.userData.isShowingInfo) {
+        // Create position data including object index for planets
+        const position = {
+          x: clickedObject.position.x,
+          y: clickedObject.position.y,
+          z: clickedObject.position.z,
+          objectIndex: isDonut ? null : orbitalPlanets.indexOf(clickedObject)
+        };
+        
+        // Show the info box
+        createSciFiTextBox(clickedObject.userData.info, position, isDonut);
+        
+        // Add a pulse animation to the clicked object
+        gsap.to(clickedObject.scale, {
+          x: clickedObject.scale.x * 1.2,
+          y: clickedObject.scale.y * 1.2,
+          z: clickedObject.scale.z * 1.2,
+          duration: 0.3,
+          yoyo: true,
+          repeat: 1
+        });
+      } else {
+        // Remove the text box if it exists
+        const textBox = document.querySelector(`.sci-fi-text-box[data-id="${isDonut ? 'donut' : orbitalPlanets.indexOf(clickedObject)}"]`);
+        if (textBox) {
+          textBox.classList.remove('active');
+          setTimeout(() => {
+            textBox.remove();
+          }, 500);
+        }
+      }
+    }
+  }
+}
+
+// Add click event listener
+window.addEventListener('click', onMouseClick);
+
+// Update the animation loop to animate the orbital planets
+function animateOrbitalPlanets(time) {
+  orbitalPlanets.forEach((planet, index) => {
+    const { orbitRadius, orbitSpeed, orbitPhase, orbitTilt } = planet.userData;
+    
+    // Update position in elliptical orbit
+    planet.position.x = Math.cos(time * orbitSpeed + orbitPhase) * orbitRadius;
+    planet.position.z = Math.sin(time * orbitSpeed + orbitPhase) * orbitRadius;
+    planet.position.y = Math.sin(time * orbitSpeed + orbitPhase) * orbitRadius * orbitTilt;
+    
+    // Rotate the planet
+    planet.rotation.y += orbitSpeed * 10;
+    
+    // Update text box positions if showing
+    if (planet.userData.isShowingInfo) {
+      const textBox = document.querySelector(`.sci-fi-text-box[data-id="${index}"]`);
+      if (textBox) {
+        const screenPosition = new THREE.Vector3(
+          planet.position.x,
+          planet.position.y,
+          planet.position.z
+        );
+        screenPosition.project(camera);
+        
+        const x = (screenPosition.x * 0.5 + 0.5) * window.innerWidth;
+        const y = (screenPosition.y * -0.5 + 0.5) * window.innerHeight;
+        
+        textBox.style.left = `${x}px`;
+        textBox.style.top = `${y}px`;
+      }
+    }
+  });
+  
+  // Update donut text box position if showing
+  if (donut.userData.isShowingInfo) {
+    const textBox = document.querySelector('.sci-fi-text-box[data-id="donut"]');
+    if (textBox) {
+      const screenPosition = new THREE.Vector3(
+        donut.position.x,
+        donut.position.y,
+        donut.position.z
+      );
+      screenPosition.project(camera);
+      
+      const x = (screenPosition.x * 0.5 + 0.5) * window.innerWidth;
+      const y = (screenPosition.y * -0.5 + 0.5) * window.innerHeight;
+      
+      textBox.style.left = `${x}px`;
+      textBox.style.top = `${y}px`;
+    }
+  }
+}
 
 // Ensure loading screen is hidden after everything is initialized
 window.addEventListener('load', () => {
