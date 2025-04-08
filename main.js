@@ -7,13 +7,6 @@ import { OrbitControls } from 'https://unpkg.com/three@0.174.0/examples/jsm/cont
 // Import GSAP from CDNJS
 import { gsap } from 'https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.7/gsap.min.js';
 
-// Import GSAP Draggable plugin from CDNJS
-import { Draggable } from 'https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.7/Draggable.min.js';
-
-
-// Register the GSAP Draggable plugin
-gsap.registerPlugin(Draggable);
-
 // Rest of your code...
 
 
