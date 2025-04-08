@@ -3,9 +3,14 @@ import * as THREE from 'https://cdnjs.cloudflare.com/ajax/libs/three.js/0.174.0/
 
 // Import OrbitControls from unpkg (or you can use jsDelivr too)
 import { OrbitControls } from 'https://unpkg.com/three@0.174.0/examples/jsm/controls/OrbitControls.js';
+// Import GSAP as an ES module from CDNJS
+import gsap from 'https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.7/gsap.esm.min.js';
 
-// Import GSAP from CDNJS
-import { gsap } from 'https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.7/gsap.min.js';
+// Import Draggable as an ES module from CDNJS
+import { Draggable } from 'https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.7/Draggable.esm.min.js';
+
+// Register the Draggable plugin
+gsap.registerPlugin(Draggable);
 
 // Rest of your code...
 
