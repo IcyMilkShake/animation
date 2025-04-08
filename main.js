@@ -8,7 +8,8 @@ import { OrbitControls } from 'https://cdn.jsdelivr.net/npm/three-orbitcontrols@
 import { gsap } from 'https://cdnjs.cloudflare.com/ajax/libs/gsap/3.10.4/gsap.min.js';
 
 // Import GSAP Draggable plugin from CDN
-import { Draggable } from 'https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.7/Draggable.min.js';
+import Draggable from 'https://cdn.jsdelivr.net/npm/gsap@3.12.7/Draggable.min.js';
+
 
 
 // Register the GSAP Draggable plugin
