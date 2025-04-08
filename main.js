@@ -1,19 +1,10 @@
-// Import Three.js (this one remains the same)
-import * as THREE from 'https://cdnjs.cloudflare.com/ajax/libs/three.js/0.174.0/three.module.js';
+import * as THREE from 'three';
+import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
+import { gsap } from 'gsap';
+import { Draggable } from 'gsap/Draggable';  // Import Draggable plugin
 
-// Import OrbitControls from unpkg (or you can use jsDelivr too)
-import { OrbitControls } from 'https://unpkg.com/three@0.174.0/examples/jsm/controls/OrbitControls.js';
-// Import GSAP as an ES module from CDNJS
-import gsap from 'https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.7/gsap.esm.min.js';
-
-// Import Draggable as an ES module from CDNJS
-import { Draggable } from 'https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.7/Draggable.esm.min.js';
-
-// Register the Draggable plugin
+// Register the GSAP Draggable plugin
 gsap.registerPlugin(Draggable);
-
-// Rest of your code...
-
 
 // Initialize time variable globally
 let time = 0;
