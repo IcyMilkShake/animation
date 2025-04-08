@@ -1,11 +1,8 @@
-// Import Three.js from CDN
+// Import Three.js from CDN using an absolute URL (this is used by import map for bare "three" imports)
 import * as THREE from 'https://cdnjs.cloudflare.com/ajax/libs/three.js/0.174.0/three.module.js';
 
-// Import OrbitControls from unpkg (or use jsDelivr)
-// Using unpkg:
+// Import OrbitControls from unpkg (using an absolute URL)
 import { OrbitControls } from 'https://unpkg.com/three@0.174.0/examples/jsm/controls/OrbitControls.js';
-// Alternatively, you can use jsDelivr:
-// import { OrbitControls } from 'https://cdn.jsdelivr.net/npm/three@0.174.0/examples/jsm/controls/OrbitControls.js';
 
 // Import GSAP from CDN
 import { gsap } from 'https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.7/gsap.min.js';
@@ -16,7 +13,7 @@ import { Draggable } from 'https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.7/Dr
 // Register the GSAP Draggable plugin
 gsap.registerPlugin(Draggable);
 
-// Rest of your code…
+// Rest of your code...
 
 
 // Initialize time variable globally
