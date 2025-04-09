@@ -1,3 +1,4 @@
+/* Base and Reset Styles */
 html, body {
   margin: 0;
   padding: 0;
@@ -5,9 +6,10 @@ html, body {
   font-family: 'Poppins', sans-serif;
   cursor: default;
   height: 100%;
+  width: 100%;
 }
 
-/* Ensure that the canvas adjusts to screen size */
+/* Canvas Styles */
 canvas {
   position: fixed;
   top: 0;
@@ -15,260 +17,17 @@ canvas {
   width: 100%;
   height: 100%;
   z-index: -1;
+  object-fit: cover;
 }
-#intro-screen {
-  position: fixed;
-  z-index: 1000;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-color: #000;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  color: white;
-  overflow: hidden;
-}
-.intro-title {
-  font-size: clamp(2.5rem, 6vw, 5rem);
-  font-weight: bold;
-  opacity: 0;
-  letter-spacing: 0.5rem;
-  z-index: 10;
-}
-.intro-subtitle {
-  margin-top: 2rem;
-  font-size: clamp(0.25rem, 6vw, 1.5rem);
-  opacity: 0;
-  z-index: 10;
-}
+
 .intro-canvas {
   position: absolute;
   top: 0;
   left: 0;
   z-index: 1;
 }
-/* Scrollable sections container */
-.sections {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100vh;
-  overflow-y: scroll;
-  scroll-snap-type: y mandatory;
-  -ms-overflow-style: none;  /* Hide scrollbar for IE and Edge */
-  scrollbar-width: none;  /* Hide scrollbar for Firefox */
-}
 
-/* Hide scrollbar for Chrome, Safari and Opera */
-.sections::-webkit-scrollbar {
-  display: none;
-}
-
-/* Each section occupies the full viewport height */
-.section {
-  scroll-snap-align: start;
-  height: 100vh;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  color: #fff;
-  text-align: center;
-  padding: 20px;
-  background: rgba(0, 0, 0, 0.5);
-  position: relative;
-  overflow: hidden;
-}
-
-/* Glass effect for content containers */
-.content-container {
-  background: rgba(255, 255, 255, 0.03);
-  backdrop-filter: blur(2px);
-  -webkit-backdrop-filter: blur(8px);
-  border-radius: 20px;
-  border: 1px solid rgba(255, 255, 255, 0.18);
-  padding: 40px;
-  max-width: 600px;
-  width: 80%;
-  max-height: 75%;
-  box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
-  transform: translateY(0);
-  transition: transform 0.5s ease, box-shadow 0.5s ease;
-}
-
-.about-content-container {
-  background: rgba(255, 255, 255, 0.03);
-  backdrop-filter: blur(2px);
-  border-radius: 20px;
-  border: 1px solid rgba(255, 255, 255, 0.18);
-  padding: 30px;
-  margin-top: 35%;
-  max-width: 750px;
-  width: 80%;
-  max-height: 15%;
-  padding-top: 0%;
-  padding-bottom: 3%;
-  box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
-  transform: translateY(0);
-  transition: transform 0.5s ease, box-shadow 0.5s ease;
-}
-
-/* Hover effect */
-.content-container:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 12px 40px 0 rgba(31, 38, 135, 0.5);
-}
-
-/* Section specific colors */
-#home .content-container {
-  border-color: rgba(255, 99, 71, 0.3);
-}
-
-#about .content-container {
-  border-color: rgba(52, 152, 219, 0.3);
-}
-
-#projects .content-container {
-  border-color: rgba(46, 204, 113, 0.3);
-}
-
-#contact .content-container {
-  border-color: rgba(155, 89, 182, 0.3);
-}
-
-/* Typography */
-.section h1 {
-  font-size: clamp(2.5rem, 6vw, 4rem);
-  margin-bottom: 20px;
-  font-weight: 700;
-  letter-spacing: 2px;
-  background: linear-gradient(45deg, #fff, #ccc);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  text-shadow: 0 0 10px rgba(255,255,255,0.1);
-}
-
-.section p {
-  font-size: clamp(1rem, 4vw, 1.3rem);
-  line-height: 1.6;
-  max-width: 100%;
-  width: 100%;
-  word-break: break-word;
-  overflow-wrap: break-word;
-  white-space: normal;
-  margin: 0;
-  text-align: center;
-  hyphens: auto;
-}
-
-/* Navigation dots */
-.nav-dots {
-  position: fixed;
-  right: 20px;
-  top: 50%;
-  transform: translateY(-50%);
-  display: flex;
-  flex-direction: column;
-  z-index: 10;
-}
-
-.nav-dot {
-  width: 12px;
-  height: 12px;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.5);
-  margin: 10px 0;
-  cursor: pointer;
-  transition: all 0.3s ease;
-}
-
-.nav-dot:hover {
-  background: rgba(255, 255, 255, 0.8);
-  transform: scale(1.2);
-}
-
-.nav-dot.active {
-  background: #fff;
-  box-shadow: 0 0 10px rgba(255, 255, 255, 0.8);
-  transform: scale(1.3);
-}
-
-/* Button styles */
-.btn {
-  background: rgba(255, 255, 255, 0.1);
-  color: white;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  padding: 12px 30px;
-  border-radius: 30px;
-  font-size: clamp(0.9rem, 4vw, 1rem);
-  cursor: pointer;
-  transition: all 0.3s ease;
-  margin-top: 20px;
-  text-decoration: none;
-  display: inline-block;
-  max-width: 100%;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.btn:hover {
-  background: rgba(255, 255, 255, 0.2);
-  transform: translateY(-3px);
-  box-shadow: 0 7px 20px rgba(0, 0, 0, 0.2);
-}
-
-/* Link styles */
-a {
-  color: #fff;
-  text-decoration: none;
-  border-bottom: 1px dotted rgba(255, 255, 255, 0.5);
-  transition: all 0.3s ease;
-}
-
-a:hover {
-  border-bottom: 1px solid rgba(255, 255, 255, 1);
-  color: #fff;
-}
-
-/* Scroll indicator */
-.scroll-indicator {
-  position: absolute;
-  bottom: 40px;
-  left: 50%;
-  transform: translateX(-50%);
-  opacity: 0.7;
-  transition: opacity 0.3s ease;
-  animation: bounce 2s infinite;
-}
-
-@keyframes bounce {
-  0%, 20%, 50%, 80%, 100% {
-    transform: translateY(0) translateX(-50%);
-  }
-  40% {
-    transform: translateY(-20px) translateX(-50%);
-  }
-  60% {
-    transform: translateY(-10px) translateX(-50%);
-  }
-}
-
-.scroll-indicator:hover {
-  opacity: 1;
-}
-
-.scroll-indicator svg {
-  width: 30px;
-  height: 30px;
-  fill: white;
-}
-
-/* Loading animation */
+/* Loading Animation */
 .loading {
   position: fixed;
   top: 0;
@@ -301,103 +60,349 @@ a:hover {
   to { transform: rotate(360deg); }
 }
 
-/* Media queries for responsiveness */
-@media (max-width: 1024px) {
-  .section h1 {
-    font-size: 3.5rem;
+/* Intro Screen */
+#intro-screen {
+  position: fixed;
+  z-index: 1000;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: #000;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  color: white;
+  overflow: hidden;
+}
+
+.intro-title {
+  font-size: clamp(2rem, 8vw, 5rem);
+  font-weight: bold;
+  opacity: 0;
+  letter-spacing: clamp(0.2rem, 1vw, 0.5rem);
+  z-index: 10;
+  text-align: center;
+  padding: 0 20px;
+}
+
+.intro-subtitle {
+  margin-top: clamp(1rem, 4vw, 2rem);
+  font-size: clamp(0.8rem, 4vw, 1.5rem);
+  opacity: 0;
+  z-index: 10;
+  text-align: center;
+  padding: 0 20px;
+}
+
+/* Sections and Navigation */
+.sections {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100vh;
+  overflow-y: scroll;
+  scroll-snap-type: y mandatory;
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+  overscroll-behavior: contain; /* Prevent bounce effects on iOS */
+  -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
+}
+
+.sections::-webkit-scrollbar {
+  display: none;
+}
+
+.section {
+  scroll-snap-align: start;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  color: #fff;
+  text-align: center;
+  padding: clamp(10px, 5vw, 20px);
+  background: rgba(0, 0, 0, 0.5);
+  position: relative;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+#about.section {
+  justify-content: flex-end; /* This aligns content to bottom */
+  padding-bottom: 80px; /* Space for the interaction hint */
+}
+
+#about + #bg {
+  z-index: 1;
+}
+
+/* Typography */
+.section h1 {
+  font-size: clamp(1.8rem, 6vw, 4rem);
+  margin-bottom: clamp(10px, 3vw, 20px);
+  font-weight: 700;
+  letter-spacing: clamp(1px, 0.5vw, 2px);
+  background: linear-gradient(45deg, #fff, #ccc);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  text-shadow: 0 0 10px rgba(255,255,255,0.1);
+}
+
+.section p {
+  font-size: clamp(0.9rem, 3vw, 1.3rem);
+  line-height: 1.6;
+  max-width: 100%;
+  width: 100%;
+  word-break: break-word;
+  overflow-wrap: break-word;
+  white-space: normal;
+  margin: 0.5em 0;
+  text-align: center;
+  hyphens: auto;
+}
+
+/* Navigation Dots */
+.nav-dots {
+  position: fixed;
+  right: 20px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  flex-direction: column;
+  z-index: 10;
+}
+
+.nav-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.5);
+  margin: 10px 0;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.nav-dot:hover {
+  background: rgba(255, 255, 255, 0.8);
+  transform: scale(1.2);
+}
+
+.nav-dot.active {
+  background: #fff;
+  box-shadow: 0 0 10px rgba(255, 255, 255, 0.8);
+  transform: scale(1.3);
+}
+
+/* Content Containers */
+.content-container {
+  background: rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(8px);
+  border-radius: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  padding: clamp(20px, 5vw, 40px);
+  max-width: min(600px, 90%);
+  width: 90%;
+  max-height: 75%;
+  overflow-y: auto; /* Allow scrolling within container on small screens */
+  box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+  transform: translateY(0);
+  transition: transform 0.5s ease, box-shadow 0.5s ease;
+  margin: 0 auto;
+}
+
+.content-container:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 12px 40px 0 rgba(31, 38, 135, 0.5);
+}
+
+.about-content-container {
+  background: rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
+  border-radius: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  padding: clamp(15px, 4vw, 10px);
+  padding-bottom: clamp(10px, 3vw, 25px);
+  width: 90%;
+  max-width: 750px;
+  box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+  transform: translateY(0);
+  transition: transform 0.5s ease, box-shadow 0.5s ease;
+}
+
+.about-content-container h1 {
+  font-size: clamp(1.8rem, 6vw, 3rem);
+  margin-top: 0;
+  margin-bottom: clamp(10px, 2vw, 15px);
+}
+
+/* Section specific colors */
+#home .content-container {
+  border-color: rgba(255, 99, 71, 0.3);
+}
+
+#about .content-container {
+  border-color: rgba(52, 152, 219, 0.3);
+}
+
+#projects .content-container {
+  border-color: rgba(46, 204, 113, 0.3);
+}
+
+#contact .content-container {
+  border-color: rgba(155, 89, 182, 0.3);
+}
+
+/* Button and Link Styles */
+.btn {
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  padding: clamp(10px, 3vw, 12px) clamp(20px, 5vw, 30px);
+  border-radius: 30px;
+  font-size: clamp(0.9rem, 3vw, 1rem);
+  cursor: pointer;
+  transition: all 0.3s ease;
+  margin-top: clamp(15px, 4vw, 20px);
+  text-decoration: none;
+  display: inline-block;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  -webkit-tap-highlight-color: rgba(0, 255, 255, 0.2); /* Visual feedback on tap */
+  touch-action: manipulation; /* Optimization for touch */
+}
+
+.btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+  transform: translateY(-3px);
+  box-shadow: 0 7px 20px rgba(0, 0, 0, 0.2);
+}
+
+a {
+  color: #fff;
+  text-decoration: none;
+  border-bottom: 1px dotted rgba(255, 255, 255, 0.5);
+  transition: all 0.3s ease;
+}
+
+a:hover {
+  border-bottom: 1px solid rgba(255, 255, 255, 1);
+  color: #fff;
+}
+
+/* Scroll Indicator */
+.scroll-indicator {
+  position: absolute;
+  bottom: 40px;
+  left: 50%;
+  transform: translateX(-50%);
+  opacity: 0.7;
+  transition: opacity 0.3s ease;
+  animation: bounce 2s infinite;
+}
+
+.scroll-indicator:hover {
+  opacity: 1;
+}
+
+.scroll-indicator svg {
+  width: 30px;
+  height: 30px;
+  fill: white;
+}
+
+@keyframes bounce {
+  0%, 20%, 50%, 80%, 100% {
+    transform: translateY(0) translateX(-50%);
   }
-  
-  .section p {
-    font-size: 1.2rem;
+  40% {
+    transform: translateY(-20px) translateX(-50%);
   }
-  
-  .content-container {
-    padding: 30px;
-    width: 85%;
-  }
-  
-  .nav-dots {
-    right: 20px;
+  60% {
+    transform: translateY(-10px) translateX(-50%);
   }
 }
 
-@media (max-width: 768px) {
-  .section h1 {
-    font-size: 3rem;
-  }
-
-  .section p {
-    font-size: 1.1rem;
-  }
-
-  .content-container {
-    padding: 25px;
-    width: 90%;
-  }
-
-  .nav-dots {
-    right: 15px;
-  }
-
-  .btn {
-    font-size: clamp(0.9rem, 8vw, 1rem);
-    padding: 10px 25px;
-  }
-  .about-content-container {
-    margin-top: 20%;
-    max-width: 90%;
-    max-height: none;
-    padding: 20px;
-  }
-
-  .about-interaction-hint {
-    font-size: 0.8rem;
-    flex-direction: row;
-    margin-top: 2rem;
-    padding: 0.5rem;
-  }
-
-  .about-interaction-hint svg {
-    width: 16px;
-    height: 16px;
-  }
+/* About Section Interaction */
+.about-interaction-hint {
+  position: absolute;
+  bottom: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #ccc;
+  padding: 0.5rem 1rem;
+  background-color: rgba(0, 30, 60, 0.5);
+  border-radius: 20px;
+  font-size: clamp(0.7rem, 2.5vw, 0.9rem);
+  z-index: 10;
+  width: 77vh;
+  max-width: 90%;
+  white-space: normal; /* Allow text to wrap */
+  text-align: center;
+  box-shadow: 0 0 15px rgba(0, 255, 255, 0.3);
+  border: 1px solid rgba(0, 255, 255, 0.3);
 }
 
-@media (max-width: 480px) {
-  .section h1 {
-    font-size: 2.5rem;
-  }
-
-  .section p {
-    font-size: 1rem;
-  }
-
-  .content-container {
-    padding: 20px;
-    width: 90%;
-  }
-
-  .nav-dots {
-    right: 10px;
-  }
-
-  .btn {
-    font-size: clamp(0.8rem, 10vw, 1rem);
-    padding: 8px 20px;
-  }
-  .about-content-container {
-    margin-top: 15%;
-    padding: 15px;
-    font-size: 0.95rem;
-  }
+.about-interaction-hint svg {
+  min-width: 16px;
+  width: clamp(14px, 4vw, 20px);
+  height: clamp(14px, 4vw, 20px);
+  margin-right: 6px;
+  flex-shrink: 0; /* Prevent icon from shrinking */
+  color: #0ff;
 }
+
+/* Hover and Click Indicators */
+.planet-hover-indicator {
+  position: absolute;
+  width: 20px;
+  height: 20px;
+  background-color: transparent;
+  border: 2px solid rgba(0, 255, 255, 0.7);
+  border-radius: 50%;
+  pointer-events: none;
+  opacity: 0;
+  transform: translate(-50%, -50%) scale(0.5);
+  transition: opacity 0.3s, transform 0.3s;
+}
+
+.planet-hover-indicator.visible {
+  opacity: 1;
+  transform: translate(-50%, -50%) scale(1);
+}
+
+.clickable-indicator {
+  position: fixed;
+  pointer-events: none;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 2px solid #0ff;
+  opacity: 0;
+  transition: opacity 0.3s;
+  z-index: 1000;
+  transform: translate(-50%, -50%);
+}
+
+.clickable-indicator.visible {
+  opacity: 1;
+}
+
 /* Sci-fi Text Box Styles */
 .sci-fi-text-containers {
   position: fixed;
   top: 0;
   left: 0;
-  width: 100%;
-  height: 100%;
   pointer-events: none;
   z-index: 100;
 }
@@ -415,6 +420,10 @@ a:hover {
   transform: scale(0.8);
   transition: opacity 0.4s ease, transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
   overflow: hidden;
+  max-width: 90vw;
+  max-height: 70vh;
+  overflow-y: auto;
+  font-size: clamp(0.8rem, 3vw, 1.3rem);
 }
 
 .sci-fi-text-box.active {
@@ -429,11 +438,12 @@ a:hover {
 
 .sci-fi-text-box p {
   margin: 0;
-  font-size: 14px;
+  font-size: 0.5vh;
   line-height: 1.5;
   color: #9ff;
   font-weight: 300;
   letter-spacing: 0.5px;
+  font-size: clamp(0.8rem, 2.5vw, 1.3vh);
 }
 
 .sci-fi-close-btn {
@@ -452,6 +462,9 @@ a:hover {
   cursor: pointer;
   z-index: 3;
   transition: background-color 0.2s;
+  width: clamp(18px, 4vw, 24px);
+  height: clamp(18px, 4vw, 24px);
+  font-size: clamp(14px, 3vw, 16px);
 }
 
 .sci-fi-close-btn:hover {
@@ -543,6 +556,7 @@ a:hover {
     opacity: 0.9;
   }
 }
+
 @keyframes pulse {
   0% {
     opacity: 0.7;
@@ -555,64 +569,355 @@ a:hover {
   }
 }
 
-.about-interaction-hint {
-  display: flex;
-  align-items: center;
-  color: #ccc;
-  margin-top: 3rem;
-  padding: 0.5rem 1rem;
-  background-color: rgba(0, 30, 60, 0.5);
-  border-radius: 20px;
-  font-size: 0.9rem;
+/* Media queries for responsiveness */
+@media (max-width: 1024px) {
+  .section h1 {
+    font-size: 3.5rem;
+  }
+  
+  .section p {
+    font-size: 1.2rem;
+  }
+  
+  .content-container {
+    padding: 30px;
+    width: 85%;
+  }
+  
+  .nav-dots {
+    right: 15px;
+  }
+  
+  .nav-dot {
+    width: 10px;
+    height: 10px;
+    margin: 8px 0;
+  }
 }
 
-.about-interaction-hint svg {
-  margin-right: 8px;
-  color: #0ff;
+@media (max-width: 768px) {
+  .section h1 {
+    font-size: 3rem;
+  }
+
+  .section p {
+    font-size: 1.1rem;
+  }
+
+  .content-container {
+    padding: 25px;
+    width: 90%;
+  }
+
+  .nav-dots {
+    right: 10px;
+  }
+  
+  .nav-dot {
+    width: 8px;
+    height: 8px;
+    margin: 6px 0;
+  }
+  
+  .scroll-indicator {
+    bottom: 20px;
+  }
+  
+  .scroll-indicator svg {
+    width: 24px;
+    height: 24px;
+  }
+  
+  .about-interaction-hint {
+    padding: 0.5rem 1rem;
+    font-size: 0.8rem;
+    bottom: 15px;
+  }
+
+  .btn {
+    font-size: clamp(0.9rem, 8vw, 1rem);
+    padding: 10px 25px;
+  }
+  .about-content-container {
+    margin-top: 20%;
+    max-width: 90%;
+    max-height: none;
+    padding: 20px;
+  }
+  
+  /* Make sci-fi text boxes display in about container on mobile */
+  .sci-fi-text-box {
+    position: absolute;
+    background-color: rgba(0, 10, 30, 0.8);
+    color: #0ff;
+    padding: 20px;
+    border-radius: 2px;
+    font-family: 'Poppins', sans-serif;
+    box-shadow: 0 0 20px rgba(0, 255, 255, 0.5);
+    pointer-events: auto;
+    opacity: 0;
+    transform: scale(0.8);
+    transition: opacity 0.4s ease, transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    overflow: hidden;
+    max-width: 90vw;
+    max-height: 70vh;
+    overflow-y: auto;
+    font-size: clamp(0.8rem, 3vw, 1.3rem);
+  }
+  
+  /* Hide sci-fi text box decorative elements on mobile */
+  .sci-fi-border,
+  .sci-fi-corner,
+  .sci-fi-close-btn {
+    display: none;
+  }
+  
+  /* Adjust text content to match about container style */
+  .sci-fi-text-box p {
+    color: #fff;
+    font-size: clamp(0.9rem, 3vw, 1.1rem);
+    margin-bottom: 10px;
+  }
+  
+  /* When on mobile, sci-fi text appears inside about container */
+  #about .about-content-container .sci-fi-content {
+    width: 100%;
+    border-top: 1px solid rgba(0, 255, 255, 0.3);
+    padding-top: 15px;
+    margin-top: 15px;
+  }
+  
+  /* Move active sci-fi boxes to about container */
+  .sci-fi-text-containers {
+    position: static;
+    pointer-events: all;
+  }
+  
+  .sci-fi-text-box.active {
+    display: block;
+    position: static;
+    transform: none;
+  }
+  
+  /* Keep about interaction hint on one line */
+  .about-interaction-hint {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    width: auto;
+    max-width: 90%;
+  }
 }
-/* Animation for hovering over clickable objects */
-.planet-hover-indicator {
+
+@media (max-width: 480px) {
+  .section h1 {
+    font-size: 2.5rem;
+  }
+
+  .section p {
+    font-size: 1rem;
+  }
+
+  .content-container {
+    padding: 20px;
+    width: 90%;
+  }
+
+  .btn {
+    padding: 8px 20px;
+    font-size: 0.9rem;
+  }
+  
+  .scroll-indicator {
+    bottom: 15px;
+  }
+  
+  .scroll-indicator svg {
+    width: 20px;
+    height: 20px;
+  }
+  
+  .nav-dots {
+    right: 5px;
+  }
+  
+  .nav-dot {
+    width: 6px;
+    height: 6px;
+    margin: 5px 0;
+  }
+  
+  #about.section {
+    padding-bottom: 60px; /* Reduced padding for small screens */
+  }
+  
+  .about-content-container {
+    padding: 12px;
+    margin-bottom: 10px;
+  }
+  
+  .about-interaction-hint {
+    padding: 0.4rem 0.7rem;
+    bottom: 12px;
+    font-size: 0.7rem;
+  }
+  
+  .about-interaction-hint svg {
+    width: 14px;
+    height: 14px;
+    min-width: 14px;
+  }
+  
+  /* About section hint */
+  .about-interaction-hint {
+    font-size: 0.7rem; /* Adjusted font size for mobile */
+    padding: 0.4rem 0.7rem; /* Adjusted padding for better spacing */
+    width: 100%; /* Ensures hint fits within screen width */
+    bottom: 20px; /* Ensures hint stays above the bottom of the screen */
+    left: 50%; /* Centers it horizontally */
+    transform: translateX(-50%); /* Centers it properly */
+  }
+
+  /* Sci-fi text box adjustments */
+  .sci-fi-text-box p {
+    font-size: 0.9rem; /* Smaller font size for better mobile readability */
+    line-height: 1.5; /* Ensures text is not too cramped */
+  }
+
+  /* About content container */
+  .about-content-container {
+    padding: 12px; /* Adjust padding for better spacing */
+    max-height: 75vh; /* Restricts height to prevent overflow */
+    overflow-y: auto; /* Allows scrolling if content exceeds height */
+    width: 90%; /* Ensures container is responsive */
+    margin-bottom: 20px; /* Adds spacing below */
+  }
+
+  /* Adjust button size for mobile */
+  .btn {
+    padding: 8px 20px; /* Adjust button size for smaller screens */
+    font-size: 0.9rem; /* Smaller font for the button */
+  }
+
+  /* Adjust scroll indicator for mobile */
+  .scroll-indicator {
+    bottom: 15px; /* Moves indicator further up for better accessibility */
+  }
+
+  /* Adjust navigation dots for mobile */
+  .nav-dots {
+    right: 5px; /* Moves the nav dots closer to the right edge */
+  }
+
+  /* Adjust sci-fi text box for smaller screens */
+.sci-fi-text-box {
   position: absolute;
-  width: 20px;
-  height: 20px;
-  background-color: transparent;
-  border: 2px solid rgba(0, 255, 255, 0.7);
-  border-radius: 50%;
-  pointer-events: none;
+  background-color: rgba(0, 10, 30, 0.8);
+  color: #0ff;
+  padding: 20px;
+  border-radius: 2px;
+  font-family: 'Poppins', sans-serif;
+  box-shadow: 0 0 20px rgba(0, 255, 255, 0.5);
+  pointer-events: auto;
   opacity: 0;
-  transform: translate(-50%, -50%) scale(0.5);
-  transition: opacity 0.3s, transform 0.3s;
+  transform: scale(0.8);
+  transition: opacity 0.4s ease, transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  overflow: hidden;
+  max-width: 90vw;
+  max-height: 70vh;
+  overflow-y: auto;
+  font-size: clamp(0.8rem, 3vw, 1.3rem);
 }
 
-.planet-hover-indicator.visible {
-  opacity: 1;
-  transform: translate(-50%, -50%) scale(1);
+  /* Adjust the close button in the sci-fi text box */
+  .sci-fi-close-btn {
+    width: 24px; /* Increases close button size for touch accessibility */
+    height: 24px; /* Increases height for better touch targets */
+    font-size: 16px; /* Adjusts close button font size */
+  }
+  
+  /* Adjust the sci-fi corner decoration */
+  .sci-fi-corner {
+    width: 8px; /* Smaller corners for mobile */
+    height: 8px; /* Matches the width */
+  }
 }
 
-/* Enhance clickable objects with hover effect */
-.clickable-indicator {
-  position: fixed;
-  pointer-events: none;
-  width: 20px;
-  height: 20px;
-  border-radius: 50%;
-  border: 2px solid #0ff;
-  opacity: 0;
-  transition: opacity 0.3s;
-  z-index: 1000;
-  transform: translate(-50%, -50%);
+/* Landscape mode adjustments */
+@media screen and (orientation: landscape) and (max-height: 500px) {
+  #about.section {
+    padding-bottom: 50px;
+  }
+  
+  .about-content-container {
+    padding: 10px;
+    margin-bottom: 1px;
+    max-width: 100vh;
+    max-height: 50vh; /* Limit height in landscape */
+    overflow-y: auto; /* Allow scrolling if needed */
+  }
+
+  .section h1 {
+    font-size: 10vh;
+    margin-bottom: 25px;
+  }
+  
+  .about-interaction-hint {
+    bottom: 10px;
+    padding: 0.3rem 0.6rem;
+    font-size: 0.65rem;
+    width: 75vh;
+  }
+  
+  .about-interaction-hint svg {
+    width: 12px;
+    height: 12px;
+    min-width: 12px;
+    margin-right: 4px;
+  }
 }
 
-.clickable-indicator.visible {
-  opacity: 1;
+/* Portrait mode adjustments */
+@media screen and (orientation: portrait) and (max-width: 500px) {
+  #about.section {
+    padding-bottom: 50px;
+  }
+  
+  .about-content-container {
+    padding: 10px;
+    margin-bottom: 1px;
+    max-width: 100vh;
+    max-height: 50vh; /* Limit height in landscape */
+    overflow-y: auto; /* Allow scrolling if needed */
+  }
+
+  .section h1 {
+    font-size: 5vh;
+    margin-bottom: 25px;
+  }
+  
+  .about-interaction-hint {
+    bottom: 10px;
+    padding: 0.3rem 0.6rem;
+    font-size: 0.65rem;
+    width: 75vh;
+  }
+  
+  .about-interaction-hint svg {
+    width: 12px;
+    height: 12px;
+    min-width: 12px;
+    margin-right: 4px;
+  }
 }
 
-/* Make the 3D canvas more prominent in the about section */
-#about + #bg {
-  z-index: 1;
-}
-
-/* Adjust section scrolling behavior for better 3D interaction */
-#about.section {
-  z-index: 2;
+/* iOS Safari specific fixes */
+@supports (-webkit-touch-callout: none) {
+  #about.section {
+    height: -webkit-fill-available;
+  }
+  
+  .about-content-container {
+    width: 85%; /* Slightly narrower on iOS for better display */
+  }
 }

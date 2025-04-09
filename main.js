@@ -1170,25 +1170,6 @@ function animateLights(time) {
 }
 
 const starField = createStarField();
-
-// Animation loop for the main site
-function animate() {
-  animationFunction(); // Call the appropriate glow animation function
-  requestAnimationFrame(animate);
-  time += 0.01;
-  controls.update();
-  animateStars(starField, time);
-
-  animateOrbitalPlanets(time);
-  // Animate particles
-  animateParticles();
-  enhanceAboutSection()
-  // Animate lights
-  animateLights(time);
-  
-  renderer.render(scene, camera);
-}
-
 // Handle window resize
 window.addEventListener('resize', () => {
   camera.aspect = window.innerWidth / window.innerHeight;
@@ -1238,7 +1219,7 @@ document.addEventListener('DOMContentLoaded', function() {
 function createOrbitalPlanets() {
   const planets = [];
   const planetCount = 5; // Number of planets to create
-  
+
   // Colors for the planets
   const planetColors = [
     0xf94144, // Red
@@ -1247,7 +1228,7 @@ function createOrbitalPlanets() {
     0x577590, // Blue
     0x43aa8b  // Teal
   ];
-  
+
   // Information for each planet
   const planetInfo = [
     "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Vivamus at felis vitae nisi scelerisque sodales.",
@@ -1256,13 +1237,13 @@ function createOrbitalPlanets() {
     "Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.",
     "Sed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium doloremque laudantium."
   ];
-  
+
   // Create planets with different orbit properties
   for (let i = 0; i < planetCount; i++) {
     // Create planet geometry - vary the sizes
     const planetSize = 0.8 + Math.random() * 1.2;
     const planetGeometry = new THREE.SphereGeometry(planetSize, 16, 16);
-    
+
     // Create planet material with glowing effect
     const planetMaterial = new THREE.MeshPhysicalMaterial({
       color: planetColors[i],
@@ -1271,16 +1252,16 @@ function createOrbitalPlanets() {
       roughness: 0.7,
       metalness: 0.3,
     });
-    
+
     // Create planet mesh
     const planet = new THREE.Mesh(planetGeometry, planetMaterial);
-    
+
     // Set up orbital properties
-    const orbitRadius = 15 + i * 5; // Increasing orbit radius
-    const orbitSpeed = 0.0003 + (planetCount - i) * 0.0002; // Different speeds
+    const orbitRadius = 15 + i * 7; // Increasing orbit radius
+    const orbitSpeed = 0.0003 + (planetCount - i) * 0.03; // Different speeds
     const orbitPhase = Math.random() * Math.PI * 2; // Random starting position
     const orbitTilt = Math.random() * 0.5; // Random orbit tilt
-    
+
     // Add info and properties to the planet
     planet.userData = {
       orbitRadius,
@@ -1291,16 +1272,16 @@ function createOrbitalPlanets() {
       isShowingInfo: false,
       clickable: true
     };
-    
+
     // Add to scene
     scene.add(planet);
     planets.push(planet);
   }
-  
+
   return planets;
 }
 
-// Create orbital planets
+// Call the function to create the planets
 const orbitalPlanets = createOrbitalPlanets();
 
 // Make the donut clickable
@@ -1667,56 +1648,36 @@ function onMouseClick(event) {
 // Add click event listener
 window.addEventListener('click', onMouseClick);
 
-// Update the animation loop to animate the orbital planets
-function animateOrbitalPlanets(time) {
-  orbitalPlanets.forEach((planet, index) => {
-    const { orbitRadius, orbitSpeed, orbitPhase, orbitTilt } = planet.userData;
-    
-    // Update position in elliptical orbit
-    planet.position.x = Math.cos(time * orbitSpeed + orbitPhase) * orbitRadius;
-    planet.position.z = Math.sin(time * orbitSpeed + orbitPhase) * orbitRadius;
-    planet.position.y = Math.sin(time * orbitSpeed + orbitPhase) * orbitRadius * orbitTilt;
-    
-    // Rotate the planet
-    planet.rotation.y += orbitSpeed * 10;
-    
-    // Update text box positions if showing
-    if (planet.userData.isShowingInfo) {
-      const textBox = document.querySelector(`.sci-fi-text-box[data-id="${index}"]`);
-      if (textBox) {
-        const screenPosition = new THREE.Vector3(
-          planet.position.x,
-          planet.position.y,
-          planet.position.z
-        );
-        screenPosition.project(camera);
-        
-        const x = (screenPosition.x * 0.5 + 0.5) * window.innerWidth;
-        const y = (screenPosition.y * -0.5 + 0.5) * window.innerHeight;
-        
-        textBox.style.left = `${x}px`;
-        textBox.style.top = `${y}px`;
-      }
-    }
+// Animation loop for the main site
+function animate() {
+  animationFunction(); // Call the appropriate glow animation function
+  requestAnimationFrame(animate);
+  time += 0.01;
+  controls.update();
+  animateStars(starField, time);
+  orbitalPlanets.forEach(planet => {
+    updatePlanetPosition(planet, time);
   });
+  // Animate particles
+  animateParticles();
+  enhanceAboutSection()
+  // Animate lights
+  animateLights(time);
   
-  // Update donut text box position if showing
-  if (donut.userData.isShowingInfo) {
-    const textBox = document.querySelector('.sci-fi-text-box[data-id="donut"]');
-    if (textBox) {
-      const screenPosition = new THREE.Vector3(
-        donut.position.x,
-        donut.position.y,
-        donut.position.z
-      );
-      screenPosition.project(camera);
-      
-      const x = (screenPosition.x * 0.5 + 0.5) * window.innerWidth;
-      const y = (screenPosition.y * -0.5 + 0.5) * window.innerHeight;
-      
-      textBox.style.left = `${x}px`;
-      textBox.style.top = `${y}px`;
-    }
+  renderer.render(scene, camera);
+
+  function updatePlanetPosition(planet, time) {
+    const { orbitRadius, orbitSpeed, orbitPhase, orbitTilt } = planet.userData;
+  
+    // Calculate current angle based on time and speed
+    const angle = orbitPhase + time * orbitSpeed ;
+  
+    // Set x and z positions to create circular orbit around origin
+    planet.position.x = orbitRadius * Math.sin(angle);
+    planet.position.z = orbitRadius * Math.cos(angle);
+  
+    // Apply tilt to orbit by adjusting y position
+    planet.position.y = orbitRadius * Math.sin(angle) * orbitTilt;
   }
 }
 
