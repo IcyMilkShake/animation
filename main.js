@@ -10,13 +10,7 @@ gsap.registerPlugin(Draggable);
 let time = 0;
 let hasExploded = false;
 
-// Function to hide loading screen from within Three.js
-function hideLoading() {
-  const loadingScreen = document.getElementById('loading-screen');
-  if (loadingScreen) {
-    loadingScreen.classList.add('hidden');
-  }
-}
+
 
 function createIntroScreen() {
   
@@ -659,7 +653,7 @@ const states = {
     donutPosition: { x: 0, y: 0, z: 0 }
   },
   about: {
-    cameraZ: 80,
+    cameraZ: 130,
     cameraX: 0,
     cameraY: 0,
     cameraRotationY: 0, // Camera looking straight ahead
@@ -1216,73 +1210,128 @@ document.addEventListener('DOMContentLoaded', function() {
     });
   });
 });
-function createOrbitalPlanets() {
+
+const textureLoader = new THREE.TextureLoader();
+
+// Load all textures you need first
+const jsTexture = textureLoader.load('JS.png'); // Transparent PNG with JS logo
+
+function createCustomPlanets() {
   const planets = [];
-  const planetCount = 5; // Number of planets to create
 
-  // Colors for the planets
-  const planetColors = [
-    0xf94144, // Red
-    0xf8961e, // Orange
-    0x90be6d, // Green
-    0x577590, // Blue
-    0x43aa8b  // Teal
+  // Define custom properties for each of the 5 planets
+  const customPlanetData = [
+    {
+      name: "JS",
+      size: 5,
+      texture: jsTexture,
+      orbitRadius: 25,
+      orbitSpeed: 0.09,
+      orbitPhase: 0,
+      orbitTilt: 0.1,
+      info: "2 Years of Javascript Working Experience"
+    },
+    {
+      name: "Zephyria",
+      size: 3,
+      color: 0xf8961e,
+      orbitRadius: 30,
+      orbitSpeed: 0.13,
+      orbitPhase: Math.PI / 3,
+      orbitTilt: 0.2,
+      info: "Zephyria has strong winds and a glowing orange atmosphere."
+    },
+    {
+      name: "Verdantia",
+      size: 4,
+      color: 0x90be6d,
+      orbitRadius: 35,
+      orbitSpeed: 0.06,
+      orbitPhase: Math.PI / 2,
+      orbitTilt: 0.15,
+      info: "Verdantia is rich in vegetation and has vibrant green lands."
+    },
+    {
+      name: "Nautilus",
+      size: 6,
+      color: 0x577590,
+      orbitRadius: 40,
+      orbitSpeed: 0.03,
+      orbitPhase: Math.PI,
+      orbitTilt: 0.3,
+      info: "Nautilus is an oceanic world covered in deep blue seas."
+    },
+    {
+      name: "Mystara",
+      size: 3.5,
+      color: 0x43aa8b,
+      orbitRadius: 45,
+      orbitSpeed: 0.11,
+      orbitPhase: Math.PI * 1.5,
+      orbitTilt: 0.25,
+      info: "Mystara is a mysterious teal planet shrouded in fog."
+    }
   ];
 
-  // Information for each planet
-  const planetInfo = [
-    "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Vivamus at felis vitae nisi scelerisque sodales.",
-    "Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.",
-    "Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.",
-    "Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.",
-    "Sed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium doloremque laudantium."
-  ];
+  customPlanetData.forEach(data => {
+    const geometry = new THREE.BoxGeometry(data.size, data.size, data.size);
+    
+    const material = data.texture
+      ? new THREE.MeshBasicMaterial({
+          map: data.texture,
+          transparent: true,
+          side: THREE.DoubleSide,
+        })
+      : new THREE.MeshPhysicalMaterial({
+          roughness: 0.4,
+          metalness: 0.7,
+          side: THREE.DoubleSide,
+        });
 
-  // Create planets with different orbit properties
-  for (let i = 0; i < planetCount; i++) {
-    // Create planet geometry - vary the sizes
-    const planetSize = 0.8 + Math.random() * 1.2;
-    const planetGeometry = new THREE.SphereGeometry(planetSize, 16, 16);
-
-    // Create planet material with glowing effect
-    const planetMaterial = new THREE.MeshPhysicalMaterial({
-      color: planetColors[i],
-      emissive: planetColors[i],
-      emissiveIntensity: 0.3,
-      roughness: 0.7,
-      metalness: 0.3,
+    const planet = new THREE.Mesh(geometry, material);
+    
+    // Create outline mesh using the same geometry but slightly larger
+    const outlineGeometry = new THREE.BoxGeometry(
+      data.size * 1.1, 
+      data.size * 1.1, 
+      data.size * 1.1
+    );
+    
+    const outlineMaterial = new THREE.MeshBasicMaterial({
+      color: 0xffffff,
+      side: THREE.BackSide, // Draw on the back side to avoid z-fighting
+      transparent: true,
+      opacity: 0, // Start invisible
     });
+    
+    const outlineMesh = new THREE.Mesh(outlineGeometry, outlineMaterial);
+    planet.add(outlineMesh); // Add as child to the planet
+    planet.userData.outlineMesh = outlineMesh; // Store reference for easy access
+    
+    planet.userData.originalScale = planet.scale.clone();
 
-    // Create planet mesh
-    const planet = new THREE.Mesh(planetGeometry, planetMaterial);
-
-    // Set up orbital properties
-    const orbitRadius = 15 + i * 7; // Increasing orbit radius
-    const orbitSpeed = 0.0003 + (planetCount - i) * 0.03; // Different speeds
-    const orbitPhase = Math.random() * Math.PI * 2; // Random starting position
-    const orbitTilt = Math.random() * 0.5; // Random orbit tilt
-
-    // Add info and properties to the planet
     planet.userData = {
-      orbitRadius,
-      orbitSpeed,
-      orbitPhase,
-      orbitTilt,
-      info: planetInfo[i],
+      ...planet.userData,
+      name: data.name,
+      orbitRadius: data.orbitRadius,
+      orbitSpeed: data.orbitSpeed,
+      orbitPhase: data.orbitPhase,
+      orbitTilt: data.orbitTilt,
+      info: data.info,
       isShowingInfo: false,
-      clickable: true
+      clickable: true,
+      outlineMesh: outlineMesh // Preserve the outline reference
     };
 
-    // Add to scene
     scene.add(planet);
     planets.push(planet);
-  }
+  });
 
   return planets;
 }
+// Create the planets
+const orbitalPlanets = createCustomPlanets();
 
-// Call the function to create the planets
-const orbitalPlanets = createOrbitalPlanets();
 
 // Make the donut clickable
 donut.userData = { 
@@ -1301,94 +1350,114 @@ textBoxContainer.className = 'sci-fi-text-containers';
 document.body.appendChild(textBoxContainer);
 
 // Function to create a sci-fi text box
-function createSciFiTextBox(info, position, isDonut = false) {
-  // Calculate screen position from 3D position
-  const screenPosition = new THREE.Vector3(position.x, position.y, position.z);
-  screenPosition.project(camera);
+function updateTextBoxPositions() {
+  // Get all active sci-fi text boxes
+  const textBoxes = document.querySelectorAll('.sci-fi-text-box');
   
-  const x = (screenPosition.x * 0.5 + 0.5) * window.innerWidth;
-  const y = (screenPosition.y * -0.5 + 0.5) * window.innerHeight;
-  
-  // Create container if it doesn't exist
-  let textBox = document.querySelector(`.sci-fi-text-box[data-id="${isDonut ? 'donut' : position.objectIndex}"]`);
-  
-  if (!textBox) {
-    textBox = document.createElement('div');
-    textBox.className = 'sci-fi-text-box';
-    textBox.setAttribute('data-id', isDonut ? 'donut' : position.objectIndex);
-    textBoxContainer.appendChild(textBox);
+  // Update each text box's position based on its associated object
+  textBoxes.forEach(textBox => {
+    const id = textBox.getAttribute('data-id');
+    let object;
     
-    // Add close button
-    const closeBtn = document.createElement('div');
-    closeBtn.className = 'sci-fi-close-btn';
-    closeBtn.innerHTML = '×';
-    closeBtn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      textBox.classList.remove('active');
-      setTimeout(() => {
-        textBox.remove();
-      }, 500);
-      
-      // Reset the isShowingInfo flag on the object
-      if (isDonut) {
-        donut.userData.isShowingInfo = false;
-      } else {
-        orbitalPlanets[position.objectIndex].userData.isShowingInfo = false;
+    // Determine which object this text box is associated with
+    if (id === 'donut') {
+      object = donut;
+    } else {
+      // Convert ID to number for planet index
+      const planetIndex = parseInt(id);
+      if (!isNaN(planetIndex) && planetIndex >= 0 && planetIndex < orbitalPlanets.length) {
+        object = orbitalPlanets[planetIndex];
       }
-    });
+    }
     
-    textBox.appendChild(closeBtn);
+    // If we found the associated object, update the text box position
+    if (object) {
+      // Convert 3D position to screen coordinates
+      const position = new THREE.Vector3(
+        object.position.x,
+        object.position.y,
+        object.position.z
+      );
+      
+      // Project 3D position to 2D screen coordinates
+      position.project(camera);
+      
+      // Convert to CSS coordinates
+      const x = (position.x * 0.5 + 0.5) * window.innerWidth;
+      const y = (-(position.y * 0.5) + 0.5) * window.innerHeight;
+      
+      // Set text box position with slight offset to avoid covering the object
+      // Offset more depending on if it's a donut or planet
+      const yOffset = id === 'donut' ? -70 : -50;
+      const xOffset = 10;  // Slight horizontal offset
+      
+      textBox.style.left = `${x + xOffset}px`;
+      textBox.style.top = `${y + yOffset}px`;
+      
+      // Add depth perception - scale down text boxes for objects that are further away
+      // Get the distance from camera to object
+      const distance = camera.position.distanceTo(object.position);
+      const baseDistance = 50; // Reference distance
+      const scale = Math.max(0.6, Math.min(1, baseDistance / distance));
+      
+      textBox.style.transform = `translate(-50%, -50%) scale(${scale})`;
+      
+      // Adjust opacity based on distance for subtle depth effect
+      textBox.style.opacity = Math.max(0.7, Math.min(1, scale));
+    }
+  });
+}
+
+// Function to create a sci-fi text box with position tracking
+function createSciFiTextBox(text, position, isDonut) {
+  // Create the text box container
+  const textBox = document.createElement('div');
+  textBox.className = 'sci-fi-text-box';
+  textBox.setAttribute('data-id', isDonut ? 'donut' : position.objectIndex);
+  
+  // Create the text box content
+  textBox.innerHTML = `
+    <div class="sci-fi-text-box-content">
+      <div class="sci-fi-text-box-header"></div>
+      <div class="sci-fi-text-box-body">${text}</div>
+      <div class="sci-fi-text-box-footer"></div>
+    </div>
+  `;
+  
+  // Add close button
+  const closeButton = document.createElement('button');
+  closeButton.className = 'sci-fi-close-btn';
+  closeButton.innerHTML = '×';
+  closeButton.addEventListener('click', () => {
+    textBox.classList.remove('active');
+    setTimeout(() => {
+      textBox.remove();
+    }, 500);
     
-    // Create content container
-    const contentDiv = document.createElement('div');
-    contentDiv.className = 'sci-fi-content';
-    textBox.appendChild(contentDiv);
-    
-    // Add glowing border effect elements
-    const borders = ['top', 'right', 'bottom', 'left'];
-    borders.forEach(border => {
-      const borderElem = document.createElement('div');
-      borderElem.className = `sci-fi-border sci-fi-border-${border}`;
-      textBox.appendChild(borderElem);
-    });
-    
-    // Add corner elements
-    const corners = ['top-left', 'top-right', 'bottom-right', 'bottom-left'];
-    corners.forEach(corner => {
-      const cornerElem = document.createElement('div');
-      cornerElem.className = `sci-fi-corner sci-fi-corner-${corner}`;
-      textBox.appendChild(cornerElem);
-    });
-  }
+    // Also update the isShowingInfo flag on the object
+    if (isDonut) {
+      donut.userData.isShowingInfo = false;
+    } else if (position.objectIndex !== null && position.objectIndex >= 0 && position.objectIndex < orbitalPlanets.length) {
+      orbitalPlanets[position.objectIndex].userData.isShowingInfo = false;
+    }
+  });
   
-  // Update content and position
-  const contentDiv = textBox.querySelector('.sci-fi-content');
-  contentDiv.innerHTML = `<p>${info}</p>`;
+  textBox.querySelector('.sci-fi-text-box-content').appendChild(closeButton);
   
-  // Position the box
-  textBox.style.left = `${x}px`;
-  textBox.style.top = `${y}px`;
+  // Add to DOM
+  document.body.appendChild(textBox);
   
-  // Size based on content and position
-  if (isDonut) {
-    textBox.style.width = '300px';
-    textBox.style.height = 'auto';
-    // Center donut box
-    textBox.style.transform = 'translate(-50%, -50%)';
-  } else {
-    textBox.style.width = '250px';
-    textBox.style.height = 'auto';
-    // Offset planet boxes to prevent overlapping with planet
-    textBox.style.transform = 'translate(20px, -100%)';
-  }
+  // Force a reflow to ensure the transition works
+  textBox.offsetHeight;
   
-  // Animate in
+  // Show with animation
   setTimeout(() => {
     textBox.classList.add('active');
   }, 10);
   
   return textBox;
 }
+
 function createClickableIndicator() {
   const indicator = document.createElement('div');
   indicator.className = 'clickable-indicator';
@@ -1404,6 +1473,13 @@ function checkMouseOverObjects(event) {
   const currentSection = document.querySelector('.section:nth-child(' + (currentSectionIndex + 1) + ')');
   if (!currentSection || currentSection.id !== 'about') {
     clickIndicator.classList.remove('visible');
+    // Hide all outlines
+    const clickableObjects = [donut, ...orbitalPlanets];
+    clickableObjects.forEach(object => {
+      if (object && object.userData && object.userData.outlineMesh) {
+        object.userData.outlineMesh.material.opacity = 0;
+      }
+    });
     return;
   }
   
@@ -1415,15 +1491,19 @@ function checkMouseOverObjects(event) {
   raycaster.setFromCamera(mouse, camera);
   
   // Check for intersections with clickable objects
-  const clickableObjects = [donut, ...orbitalPlanets];
+  const clickableObjects = [donut, ...orbitalPlanets].filter(obj => obj !== undefined);
   const intersects = raycaster.intersectObjects(clickableObjects);
+  
+  let hoveredObject = null;
   
   if (intersects.length > 0) {
     // Mouse is over a clickable object
     const object = intersects[0].object;
     
     // Only proceed if the object is clickable
-    if (object.userData.clickable) {
+    if (object && object.userData && object.userData.clickable) {
+      hoveredObject = object;
+      
       // Position the indicator at mouse position
       clickIndicator.style.left = event.clientX + 'px';
       clickIndicator.style.top = event.clientY + 'px';
@@ -1435,21 +1515,40 @@ function checkMouseOverObjects(event) {
       // Highlight the object
       if (!object.userData.isHighlighted) {
         object.userData.isHighlighted = true;
-        object.userData.originalEmissiveIntensity = object.material.emissiveIntensity || 0;
         
-        // Increase emissive intensity for glow effect
-        if (object.material.emissive) {
+        // Store original emissive intensity if it exists
+        if (object.material && object.material.emissive) {
+          object.userData.originalEmissiveIntensity = object.material.emissiveIntensity || 0;
+          
+          // Increase emissive intensity for glow effect
           gsap.to(object.material, {
             emissiveIntensity: Math.max(0.8, object.userData.originalEmissiveIntensity * 2),
             duration: 0.3
           });
         }
         
+        // Show the outline by animating its opacity
+        if (object.userData.outlineMesh) {
+          gsap.to(object.userData.outlineMesh.material, {
+            opacity: 0.7, // Semi-transparent white outline
+            duration: 0.3
+          });
+        }
+        
+        // Make sure originalScale exists before using it
+        if (!object.userData.originalScale) {
+          object.userData.originalScale = {
+            x: object.scale.x,
+            y: object.scale.y,
+            z: object.scale.z
+          };
+        }
+        
         // Subtle scale animation
         gsap.to(object.scale, {
-          x: object.scale.x * 1.1,
-          y: object.scale.y * 1.1,
-          z: object.scale.z * 1.1,
+          x: object.userData.originalScale.x * 1.1,
+          y: object.userData.originalScale.y * 1.1,
+          z: object.userData.originalScale.z * 1.1,
           duration: 0.3
         });
       }
@@ -1458,31 +1557,156 @@ function checkMouseOverObjects(event) {
     // Mouse is not over any clickable object
     clickIndicator.classList.remove('visible');
     document.body.style.cursor = 'default';
+  }
+  
+  // Reset all highlighted objects
+  clickableObjects.forEach(object => {
+    // Skip if this is the currently hovered object or if object is undefined
+    if (!object || object === hoveredObject) return;
     
-    // Reset all highlighted objects
-    const clickableObjects = [donut, ...orbitalPlanets];
-    clickableObjects.forEach(object => {
-      if (object.userData.isHighlighted) {
-        object.userData.isHighlighted = false;
-        
-        // Reset emissive intensity
-        if (object.material.emissive && object.userData.originalEmissiveIntensity !== undefined) {
-          gsap.to(object.material, {
-            emissiveIntensity: object.userData.originalEmissiveIntensity,
-            duration: 0.3
-          });
-        }
-        
-        // Reset scale
-        gsap.to(object.scale, {
-          x: object.scale.x / 1.1,
-          y: object.scale.y / 1.1,
-          z: object.scale.z / 1.1,
+    if (object.userData && object.userData.isHighlighted) {
+      object.userData.isHighlighted = false;
+      
+      // Reset emissive intensity if it exists
+      if (object.material && object.material.emissive && object.userData.originalEmissiveIntensity !== undefined) {
+        gsap.to(object.material, {
+          emissiveIntensity: object.userData.originalEmissiveIntensity,
           duration: 0.3
         });
       }
+      
+      // Hide the outline
+      if (object.userData.outlineMesh) {
+        gsap.to(object.userData.outlineMesh.material, {
+          opacity: 0,
+          duration: 0.3
+        });
+      }
+      
+      // Make sure originalScale exists before using it
+      if (!object.userData.originalScale) {
+        object.userData.originalScale = {
+          x: object.scale.x,
+          y: object.scale.y,
+          z: object.scale.z
+        };
+      }
+      
+      // Reset scale
+      gsap.to(object.scale, {
+        x: object.userData.originalScale.x,
+        y: object.userData.originalScale.y,
+        z: object.userData.originalScale.z,
+        duration: 0.3
+      });
+    }
+  });
+}
+
+function addDonutOutline() {
+  // Check if donut exists
+  if (!donut || !donut.geometry) return;
+
+  // Create a slightly larger geometry for the outline
+  const outlineGeometry = new THREE.TorusGeometry(
+    donut.geometry.parameters.radius * 1.05, 
+    donut.geometry.parameters.tube * 1.05, 
+    donut.geometry.parameters.radialSegments,
+    donut.geometry.parameters.tubularSegments
+  );
+  
+  const outlineMaterial = new THREE.MeshBasicMaterial({
+    color: 0xffffff,
+    side: THREE.BackSide,
+    transparent: true,
+    opacity: 0
+  });
+  
+  const outlineMesh = new THREE.Mesh(outlineGeometry, outlineMaterial);
+  donut.add(outlineMesh);
+  donut.userData.outlineMesh = outlineMesh;
+}
+
+function addPlanetOutlines() {
+  orbitalPlanets.forEach(planet => {
+    if (!planet || !planet.geometry) return;
+
+    let outlineGeometry;
+
+    // Handle sphere geometry type
+    if (planet.geometry.type === 'SphereGeometry') {
+      outlineGeometry = new THREE.SphereGeometry(
+        planet.geometry.parameters.radius * 1.05,
+        planet.geometry.parameters.widthSegments,
+        planet.geometry.parameters.heightSegments
+      );
+    }
+    // Handle box geometry type
+    else if (planet.geometry.type === 'BoxGeometry') {
+      outlineGeometry = new THREE.BoxGeometry(
+        planet.geometry.parameters.width * 1.15,
+        planet.geometry.parameters.height * 1.15,
+        planet.geometry.parameters.depth * 1.15
+      );
+    }
+    // Handle other geometries if necessary (e.g., TorusGeometry, etc.)
+    else {
+      outlineGeometry = planet.geometry.clone();
+    }
+
+    // Create material for the outline (white and semi-transparent)
+    const outlineMaterial = new THREE.MeshBasicMaterial({
+      color: 0xffffff,
+      side: THREE.BackSide, // Render the outline on the back side to avoid z-fighting
+      transparent: true,
+      opacity: 0 // Initially set to invisible
     });
+
+    // Create outline mesh
+    const outlineMesh = new THREE.Mesh(outlineGeometry, outlineMaterial);
+    
+    // Add outline mesh as a child of the planet
+    planet.add(outlineMesh);
+    
+    // Store the reference to the outlineMesh in userData for easy access
+    planet.userData.outlineMesh = outlineMesh;
+  });
+}
+
+
+// Initialize object properties
+function initializeObjectProperties() {
+  // Initialize donut if it exists
+  if (donut) {
+    donut.userData.clickable = true;
+    donut.userData.isShowingInfo = false;
+    donut.userData.originalScale = {
+      x: donut.scale.x,
+      y: donut.scale.y,
+      z: donut.scale.z
+    };
   }
+  
+  // Initialize planets
+  orbitalPlanets.forEach((planet, index) => {
+    if (!planet) return;
+    
+    planet.userData.clickable = true;
+    planet.userData.isShowingInfo = false;
+    planet.userData.originalScale = {
+      x: planet.scale.x,
+      y: planet.scale.y,
+      z: planet.scale.z
+    };
+  });
+}
+
+// Call this after creating your donut and planets
+// This function should be called after all objects are created
+function setupInteractiveObjects() {
+  addDonutOutline();
+  addPlanetOutlines();
+  initializeObjectProperties();
 }
 
 // Add event listener for mouse movement
@@ -1507,58 +1731,67 @@ function enhanceAboutSection() {
   if (aboutSection && currentSectionIndex === Array.from(sections).findIndex(section => section.id === 'about')) {
     // Make planets more visible
     orbitalPlanets.forEach(planet => {
+      if (!planet) return; // Skip if planet is undefined
+      
       if (!planet.userData.enhancedForAboutSection) {
         planet.userData.enhancedForAboutSection = true;
         
         // Store original values
         planet.userData.originalMaterialValues = {
-          emissiveIntensity: planet.material.emissiveIntensity || 0,
           opacity: planet.material.opacity || 1
         };
         
-        // Enhance visibility
-        if (planet.material.emissive) {
+        // Store emissive intensity only if the material supports it
+        if (planet.material && planet.material.emissive) {
+          planet.userData.originalMaterialValues.emissiveIntensity = planet.material.emissiveIntensity || 0;
+          // Enhance visibility
           planet.material.emissiveIntensity = 0.6;
         }
         
         // Ensure full opacity
-        if (planet.material.transparent) {
+        if (planet.material && planet.material.transparent) {
           planet.material.opacity = 1;
         }
       }
     });
     
     // Make donut more prominent
-    if (!donut.userData.enhancedForAboutSection) {
+    if (donut && !donut.userData.enhancedForAboutSection) {
       donut.userData.enhancedForAboutSection = true;
       
       // Store original values
       donut.userData.originalMaterialValues = {
         transmission: donut.material.transmission || 0,
-        clearcoat: donut.material.clearcoat || 0,
-        emissiveIntensity: donut.material.emissiveIntensity || 0
+        clearcoat: donut.material.clearcoat || 0
       };
       
-      // Enhance visibility
-      donut.material.transmission = 0.9;
-      donut.material.clearcoat = 1;
-      if (donut.material.emissive) {
+      // Store emissive intensity only if the material supports it
+      if (donut.material && donut.material.emissive) {
+        donut.userData.originalMaterialValues.emissiveIntensity = donut.material.emissiveIntensity || 0;
         donut.material.emissiveIntensity = 0.15;
+      }
+      
+      // Enhance visibility
+      if (donut.material) {
+        donut.material.transmission = 0.9;
+        donut.material.clearcoat = 1;
       }
     }
   } else {
     // Reset enhancements if we're not on the about section
     orbitalPlanets.forEach(planet => {
-      if (planet.userData.enhancedForAboutSection) {
+      if (!planet) return; // Skip if planet is undefined
+      
+      if (planet.userData && planet.userData.enhancedForAboutSection) {
         planet.userData.enhancedForAboutSection = false;
         
         // Restore original values
         if (planet.userData.originalMaterialValues) {
-          if (planet.material.emissive && planet.userData.originalMaterialValues.emissiveIntensity !== undefined) {
+          if (planet.material && planet.material.emissive && planet.userData.originalMaterialValues.emissiveIntensity !== undefined) {
             planet.material.emissiveIntensity = planet.userData.originalMaterialValues.emissiveIntensity;
           }
           
-          if (planet.material.transparent && planet.userData.originalMaterialValues.opacity !== undefined) {
+          if (planet.material && planet.material.transparent && planet.userData.originalMaterialValues.opacity !== undefined) {
             planet.material.opacity = planet.userData.originalMaterialValues.opacity;
           }
         }
@@ -1566,70 +1799,100 @@ function enhanceAboutSection() {
     });
     
     // Reset donut
-    if (donut.userData.enhancedForAboutSection) {
+    if (donut && donut.userData && donut.userData.enhancedForAboutSection) {
       donut.userData.enhancedForAboutSection = false;
       
       // Restore original values
       if (donut.userData.originalMaterialValues) {
-        if (donut.userData.originalMaterialValues.transmission !== undefined) {
+        if (donut.material && donut.userData.originalMaterialValues.transmission !== undefined) {
           donut.material.transmission = donut.userData.originalMaterialValues.transmission;
         }
         
-        if (donut.userData.originalMaterialValues.clearcoat !== undefined) {
+        if (donut.material && donut.userData.originalMaterialValues.clearcoat !== undefined) {
           donut.material.clearcoat = donut.userData.originalMaterialValues.clearcoat;
         }
         
-        if (donut.material.emissive && donut.userData.originalMaterialValues.emissiveIntensity !== undefined) {
+        if (donut.material && donut.material.emissive && donut.userData.originalMaterialValues.emissiveIntensity !== undefined) {
           donut.material.emissiveIntensity = donut.userData.originalMaterialValues.emissiveIntensity;
         }
       }
     }
   }
 }
+
 // Handle clicks on objects
 function onMouseClick(event) {
-  // Calculate mouse position in normalized device coordinates
+  // Calculate mouse position
   mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
   mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
   
   // Update the raycaster
   raycaster.setFromCamera(mouse, camera);
   
-  // Check if the donut or any planets were clicked
-  const clickableObjects = [donut, ...orbitalPlanets];
+  // Check for intersections with clickable objects
+  const clickableObjects = [donut, ...orbitalPlanets].filter(obj => obj !== undefined);
   const intersects = raycaster.intersectObjects(clickableObjects);
   
   if (intersects.length > 0) {
     const clickedObject = intersects[0].object;
     
-    // Only proceed if the object is clickable
-    if (clickedObject.userData.clickable) {
-      // Toggle the info display
-      clickedObject.userData.isShowingInfo = !clickedObject.userData.isShowingInfo;
-      
-      // Check if it's the donut or a planet
+    if (clickedObject && clickedObject.userData && clickedObject.userData.clickable) {
+      // Check if the object is the donut
       const isDonut = clickedObject === donut;
       
+      // Toggle info display
+      clickedObject.userData.isShowingInfo = !clickedObject.userData.isShowingInfo;
+      
       if (clickedObject.userData.isShowingInfo) {
-        // Create position data including object index for planets
-        const position = {
+        // Display info for the clicked object
+        let info = "";
+        
+        if (isDonut) {
+          info = "This is the central donut object of our universe. It represents the core of our system.";
+        } else {
+          const planetIndex = orbitalPlanets.indexOf(clickedObject);
+          info = `Planet ${planetIndex + 1}: An orbital planet with unique properties. It orbits around the central donut.`;
+        }
+        
+        // Create the info box
+        createSciFiTextBox(info, {
           x: clickedObject.position.x,
           y: clickedObject.position.y,
           z: clickedObject.position.z,
           objectIndex: isDonut ? null : orbitalPlanets.indexOf(clickedObject)
-        };
+        }, isDonut);
         
-        // Show the info box
-        createSciFiTextBox(clickedObject.userData.info, position, isDonut);
+        // Make sure originalScale exists before using it
+        if (!clickedObject.userData.originalScale) {
+          clickedObject.userData.originalScale = {
+            x: clickedObject.scale.x,
+            y: clickedObject.scale.y,
+            z: clickedObject.scale.z
+          };
+        }
         
-        // Add a pulse animation to the clicked object
+        // Pulse animation
+        const originalScale = new THREE.Vector3(
+          clickedObject.userData.originalScale.x,
+          clickedObject.userData.originalScale.y,
+          clickedObject.userData.originalScale.z
+        );
+        
         gsap.to(clickedObject.scale, {
-          x: clickedObject.scale.x * 1.2,
-          y: clickedObject.scale.y * 1.2,
-          z: clickedObject.scale.z * 1.2,
+          x: originalScale.x * 1.2,
+          y: originalScale.y * 1.2,
+          z: originalScale.z * 1.2,
           duration: 0.3,
           yoyo: true,
-          repeat: 1
+          repeat: 1,
+          onComplete: () => {
+            // Reset to EXACTLY the original scale values
+            clickedObject.scale.set(
+              originalScale.x,
+              originalScale.y,
+              originalScale.z
+            );
+          }
         });
       } else {
         // Remove the text box if it exists
@@ -1650,45 +1913,103 @@ window.addEventListener('click', onMouseClick);
 
 // Animation loop for the main site
 function animate() {
-  animationFunction(); // Call the appropriate glow animation function
+  // Call the appropriate glow animation function if it exists
+  if (typeof animationFunction === 'function') {
+    animationFunction();
+  }
+  
   requestAnimationFrame(animate);
   time += 0.01;
-  controls.update();
-  animateStars(starField, time);
-  orbitalPlanets.forEach(planet => {
-    updatePlanetPosition(planet, time);
-  });
-  // Animate particles
-  animateParticles();
-  enhanceAboutSection()
-  // Animate lights
-  animateLights(time);
   
-  renderer.render(scene, camera);
+  // Update controls if they exist
+  if (controls) {
+    controls.update();
+  }
+  
+  // Animate stars if the function and starField exist
+  if (typeof animateStars === 'function' && starField) {
+    animateStars(starField, time);
+  }
+  
+  // Update planet positions
+  if (orbitalPlanets && orbitalPlanets.length > 0) {
+    orbitalPlanets.forEach(planet => {
+      if (!planet) return;
+      
+      updatePlanetPosition(planet, time);
+    
+      // Self-rotation (spin)
+      planet.rotation.x += 0.005;
+      planet.rotation.y += 0.00000000005;
+      planet.rotation.z += 0.0005;
+    });
+  }
+  updateTextBoxPositions();
+  // Animate particles if the function exists
+  if (typeof animateParticles === 'function') {
+    animateParticles();
+  }
+  
+  // Enhance about section display
+  enhanceAboutSection();
+  
+  // Animate lights if the function exists
+  if (typeof animateLights === 'function') {
+    animateLights(time);
+  }
+  
+  // Render the scene if renderer and camera exist
+  if (renderer && camera) {
+    renderer.render(scene, camera);
+  }
+}
 
-  function updatePlanetPosition(planet, time) {
-    const { orbitRadius, orbitSpeed, orbitPhase, orbitTilt } = planet.userData;
+function updatePlanetPosition(planet, time) {
+  if (!planet || !planet.userData) return;
   
-    // Calculate current angle based on time and speed
-    const angle = orbitPhase + time * orbitSpeed ;
-  
-    // Set x and z positions to create circular orbit around origin
-    planet.position.x = orbitRadius * Math.sin(angle);
-    planet.position.z = orbitRadius * Math.cos(angle);
-  
-    // Apply tilt to orbit by adjusting y position
-    planet.position.y = orbitRadius * Math.sin(angle) * orbitTilt;
+  const { orbitRadius, orbitSpeed, orbitPhase, orbitTilt } = planet.userData;
+
+  // Calculate current angle based on time and speed
+  const angle = orbitPhase + time * orbitSpeed;
+
+  // Set x and z positions to create circular orbit around origin
+  planet.position.x = orbitRadius * Math.sin(angle);
+  planet.position.z = orbitRadius * Math.cos(angle);
+
+  // Apply tilt to orbit by adjusting y position
+  planet.position.y = orbitRadius * Math.sin(angle) * orbitTilt;
+}
+
+// Function to hide loading screen
+function hideLoading() {
+  const loadingScreen = document.getElementById('loading-screen');
+  if (loadingScreen) {
+    loadingScreen.classList.add('hidden');
+    setTimeout(() => {
+      loadingScreen.style.display = 'none';
+    }, 500);
   }
 }
 
 // Ensure loading screen is hidden after everything is initialized
 window.addEventListener('load', () => {
+  // Make sure all objects have required properties
+  setupInteractiveObjects();
+  
   // Hide loading after small delay to ensure Three.js scene is ready
   setTimeout(hideLoading, 1500);
   
   // Start rendering
-  createNavDots();
-  goToSection(0); // Start at the first section
+  if (typeof createNavDots === 'function') {
+    createNavDots();
+  }
+  
+  // Go to first section if the function exists
+  if (typeof goToSection === 'function') {
+    goToSection(0); // Start at the first section
+  }
+  
+  // Start animation loop
   animate();
 });
 
