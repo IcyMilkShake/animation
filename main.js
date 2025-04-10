@@ -9,7 +9,7 @@ gsap.registerPlugin(Draggable);
 // Initialize time variable globally
 let time = 0;
 let hasExploded = false;
-
+let current_page = "home"
 
 
 function createIntroScreen() {
@@ -471,9 +471,14 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 // Create scene, camera, and renderer
 const scene = new THREE.Scene();
+const planetScene = new THREE.Scene(); // Scene A — for planets only
+const planetambientLight = new THREE.AmbientLight(0xffffff, 15); // Soft white light, 60% intensity
+planetScene.add(planetambientLight);
+
 const camera = new THREE.PerspectiveCamera(
   75, window.innerWidth / window.innerHeight, 0.1, 1000
 );
+
 const renderer = new THREE.WebGLRenderer({ 
   canvas: document.querySelector('#bg'),
   antialias: true
@@ -972,6 +977,7 @@ function goToSection(index) {
   
   // Animate 3D scene
   const sectionId = sections[index].id;
+  current_page = sectionId;
   if (states[sectionId]) {
     animateState(states[sectionId]);
   }
@@ -1007,6 +1013,7 @@ function applyDonutIdleAnimation(sectionId) {
         donut.position.y = Math.sin(time) * baseAmplitude;
         scene.background = new THREE.Color(0xffffff);
         donutMaterial.color = new THREE.Color(0xc92900)
+        current_page == "home"
         break;
       case 'about':
         donut.rotation.x += baseSpeed * 0.8;
@@ -1014,6 +1021,7 @@ function applyDonutIdleAnimation(sectionId) {
         donut.position.x = Math.sin(time * 1.2) * baseAmplitude;
         scene.background = new THREE.Color(0x000020);
         donutMaterial.color = new THREE.Color(0xffffff)
+        current_page == "about"
         break;
       case 'projects':
         donut.rotation.z += baseSpeed * 1.2;
@@ -1021,7 +1029,7 @@ function applyDonutIdleAnimation(sectionId) {
         donut.position.x = Math.cos(time * 0.5) * baseAmplitude;
         scene.background = new THREE.Color(0x000020);
         donutMaterial.color = new THREE.Color(0x002f9b)
-        
+        current_page == "projects"
         break;
       case 'contact':
         donut.rotation.y -= baseSpeed * 0.7;
@@ -1029,6 +1037,7 @@ function applyDonutIdleAnimation(sectionId) {
         donut.position.z = Math.sin(time * 0.6) * baseAmplitude;
         scene.background = new THREE.Color(0x000020);
         donutMaterial.color = new THREE.Color(0x6200ce)
+        current_page == "contact"
         break;
     }
     
@@ -1219,118 +1228,192 @@ const jsTexture = textureLoader.load('JS.png'); // Transparent PNG with JS logo
 function createCustomPlanets() {
   const planets = [];
 
-  // Define custom properties for each of the 5 planets
-  const customPlanetData = [
-    {
-      name: "JS",
-      size: 5,
-      texture: jsTexture,
-      orbitRadius: 25,
-      orbitSpeed: 0.09,
-      orbitPhase: 0,
-      orbitTilt: 0.1,
-      info: "2 Years of Javascript Working Experience"
-    },
-    {
-      name: "Zephyria",
-      size: 3,
-      color: 0xf8961e,
-      orbitRadius: 30,
-      orbitSpeed: 0.13,
-      orbitPhase: Math.PI / 3,
-      orbitTilt: 0.2,
-      info: "Zephyria has strong winds and a glowing orange atmosphere."
-    },
-    {
-      name: "Verdantia",
-      size: 4,
-      color: 0x90be6d,
-      orbitRadius: 35,
-      orbitSpeed: 0.06,
-      orbitPhase: Math.PI / 2,
-      orbitTilt: 0.15,
-      info: "Verdantia is rich in vegetation and has vibrant green lands."
-    },
-    {
-      name: "Nautilus",
-      size: 6,
-      color: 0x577590,
-      orbitRadius: 40,
-      orbitSpeed: 0.03,
-      orbitPhase: Math.PI,
-      orbitTilt: 0.3,
-      info: "Nautilus is an oceanic world covered in deep blue seas."
-    },
-    {
-      name: "Mystara",
-      size: 3.5,
-      color: 0x43aa8b,
-      orbitRadius: 45,
-      orbitSpeed: 0.11,
-      orbitPhase: Math.PI * 1.5,
-      orbitTilt: 0.25,
-      info: "Mystara is a mysterious teal planet shrouded in fog."
-    }
-  ];
+  // JS Planet
+  const jsPlanetData = {
+    name: "JS",
+    size: 5,
+    texture: jsTexture,
+    orbitRadius: 25,
+    orbitSpeed: 0.09,
+    orbitPhase: 0,
+    orbitTilt: 0.1,
+    info: "2 Years of Javascript Working Experience"
+  };
 
-  customPlanetData.forEach(data => {
-    const geometry = new THREE.BoxGeometry(data.size, data.size, data.size);
-    
-    const material = data.texture
-      ? new THREE.MeshBasicMaterial({
-          map: data.texture,
-          transparent: true,
-          side: THREE.DoubleSide,
-        })
-      : new THREE.MeshPhysicalMaterial({
-          roughness: 0.4,
-          metalness: 0.7,
-          side: THREE.DoubleSide,
-        });
+  const jsPlanetGeometry = new THREE.BoxGeometry(jsPlanetData.size, jsPlanetData.size, jsPlanetData.size);
+  const jsPlanetMaterial = jsPlanetData.texture
+    ? new THREE.MeshBasicMaterial({
+        map: jsPlanetData.texture,
+        transparent: true,
+        side: THREE.DoubleSide,
+      })
+    : new THREE.MeshPhysicalMaterial({
+        roughness: 0.4,
+        metalness: 0.7,
+        side: THREE.DoubleSide,
+      });
+  const jsPlanet = new THREE.Mesh(jsPlanetGeometry, jsPlanetMaterial);
 
-    const planet = new THREE.Mesh(geometry, material);
-    
-    // Create outline mesh using the same geometry but slightly larger
-    const outlineGeometry = new THREE.BoxGeometry(
-      data.size * 1.1, 
-      data.size * 1.1, 
-      data.size * 1.1
-    );
-    
-    const outlineMaterial = new THREE.MeshBasicMaterial({
-      color: 0xffffff,
-      side: THREE.BackSide, // Draw on the back side to avoid z-fighting
-      transparent: true,
-      opacity: 0, // Start invisible
-    });
-    
-    const outlineMesh = new THREE.Mesh(outlineGeometry, outlineMaterial);
-    planet.add(outlineMesh); // Add as child to the planet
-    planet.userData.outlineMesh = outlineMesh; // Store reference for easy access
-    
-    planet.userData.originalScale = planet.scale.clone();
-
-    planet.userData = {
-      ...planet.userData,
-      name: data.name,
-      orbitRadius: data.orbitRadius,
-      orbitSpeed: data.orbitSpeed,
-      orbitPhase: data.orbitPhase,
-      orbitTilt: data.orbitTilt,
-      info: data.info,
-      isShowingInfo: false,
-      clickable: true,
-      outlineMesh: outlineMesh // Preserve the outline reference
-    };
-
-    scene.add(planet);
-    planets.push(planet);
+  const jsOutlineGeometry = new THREE.BoxGeometry(jsPlanetData.size * 1.1, jsPlanetData.size * 1.1, jsPlanetData.size * 1.1);
+  const jsOutlineMaterial = new THREE.MeshBasicMaterial({
+    color: 0xffffff,
+    side: THREE.BackSide,
+    transparent: true,
+    opacity: 0,
   });
+  const jsOutlineMesh = new THREE.Mesh(jsOutlineGeometry, jsOutlineMaterial);
+  jsPlanet.add(jsOutlineMesh);
+  jsPlanet.userData.outlineMesh = jsOutlineMesh;
+  jsPlanet.userData = { ...jsPlanet.userData, ...jsPlanetData };
+  planetScene.add(jsPlanet);
+  planets.push(jsPlanet);
+
+  // Zephyria Planet
+  const zephyriaPlanetData = {
+    name: "Mom Star",
+    size: 3,
+    color: 0x85ff8f,
+    orbitRadius: 30,
+    orbitSpeed: 0.13,
+    orbitPhase: Math.PI / 3,
+    orbitTilt: 0.2,
+    info: "Farmer!!!!!"
+  };
+
+  const zephyriaPlanetGeometry = new THREE.BoxGeometry(zephyriaPlanetData.size, zephyriaPlanetData.size, zephyriaPlanetData.size);
+  const zephyriaPlanetMaterial = new THREE.MeshPhysicalMaterial({
+    color: zephyriaPlanetData.color,
+    roughness: 0.4,
+    metalness: 0.7,
+    side: THREE.DoubleSide,
+  });
+  const zephyriaPlanet = new THREE.Mesh(zephyriaPlanetGeometry, zephyriaPlanetMaterial);
+
+  const zephyriaOutlineGeometry = new THREE.BoxGeometry(zephyriaPlanetData.size * 1.1, zephyriaPlanetData.size * 1.1, zephyriaPlanetData.size * 1.1);
+  const zephyriaOutlineMaterial = new THREE.MeshBasicMaterial({
+    color: 0xffffff,
+    side: THREE.BackSide,
+    transparent: true,
+    opacity: 0,
+  });
+  const zephyriaOutlineMesh = new THREE.Mesh(zephyriaOutlineGeometry, zephyriaOutlineMaterial);
+  zephyriaPlanet.add(zephyriaOutlineMesh);
+  zephyriaPlanet.userData.outlineMesh = zephyriaOutlineMesh;
+  zephyriaPlanet.userData = { ...zephyriaPlanet.userData, ...zephyriaPlanetData };
+  planetScene.add(zephyriaPlanet);
+  planets.push(zephyriaPlanet);
+
+  // Verdantia Planet
+  const verdantiaPlanetData = {
+    name: "No clue",
+    size: 4,
+    color: 0x90be6d,
+    orbitRadius: 35,
+    orbitSpeed: 0.06,
+    orbitPhase: Math.PI / 2,
+    orbitTilt: 0.15,
+    info: "No clue"
+  };
+
+  const verdantiaPlanetGeometry = new THREE.BoxGeometry(verdantiaPlanetData.size, verdantiaPlanetData.size, verdantiaPlanetData.size);
+  const verdantiaPlanetMaterial = new THREE.MeshPhysicalMaterial({
+    color: verdantiaPlanetData.color,
+    roughness: 0.4,
+    metalness: 0.7,
+    side: THREE.DoubleSide,
+  });
+  const verdantiaPlanet = new THREE.Mesh(verdantiaPlanetGeometry, verdantiaPlanetMaterial);
+
+  const verdantiaOutlineGeometry = new THREE.BoxGeometry(verdantiaPlanetData.size * 1.1, verdantiaPlanetData.size * 1.1, verdantiaPlanetData.size * 1.1);
+  const verdantiaOutlineMaterial = new THREE.MeshBasicMaterial({
+    color: 0xffffff,
+    side: THREE.BackSide,
+    transparent: true,
+    opacity: 0,
+  });
+  const verdantiaOutlineMesh = new THREE.Mesh(verdantiaOutlineGeometry, verdantiaOutlineMaterial);
+  verdantiaPlanet.add(verdantiaOutlineMesh);
+  verdantiaPlanet.userData.outlineMesh = verdantiaOutlineMesh;
+  verdantiaPlanet.userData = { ...verdantiaPlanet.userData, ...verdantiaPlanetData };
+  planetScene.add(verdantiaPlanet);
+  planets.push(verdantiaPlanet);
+
+  // Nautilus Planet
+  const nautilusPlanetData = {
+    name: "No clue",
+    size: 6,
+    color: 0x577590,
+    orbitRadius: 40,
+    orbitSpeed: 0.03,
+    orbitPhase: Math.PI,
+    orbitTilt: 0.3,
+    info: "No clue"
+  };
+
+  const nautilusPlanetGeometry = new THREE.BoxGeometry(nautilusPlanetData.size, nautilusPlanetData.size, nautilusPlanetData.size);
+  const nautilusPlanetMaterial = new THREE.MeshPhysicalMaterial({
+    color: nautilusPlanetData.color,
+    roughness: 0.4,
+    metalness: 0.7,
+    side: THREE.DoubleSide,
+  });
+  const nautilusPlanet = new THREE.Mesh(nautilusPlanetGeometry, nautilusPlanetMaterial);
+
+  const nautilusOutlineGeometry = new THREE.BoxGeometry(nautilusPlanetData.size * 1.1, nautilusPlanetData.size * 1.1, nautilusPlanetData.size * 1.1);
+  const nautilusOutlineMaterial = new THREE.MeshBasicMaterial({
+    color: 0xffffff,
+    side: THREE.BackSide,
+    transparent: true,
+    opacity: 0,
+  });
+  const nautilusOutlineMesh = new THREE.Mesh(nautilusOutlineGeometry, nautilusOutlineMaterial);
+  nautilusPlanet.add(nautilusOutlineMesh);
+  nautilusPlanet.userData.outlineMesh = nautilusOutlineMesh;
+  nautilusPlanet.userData = { ...nautilusPlanet.userData, ...nautilusPlanetData };
+  planetScene.add(nautilusPlanet);
+  planets.push(nautilusPlanet);
+
+  // Mystara Planet
+  const mystaraPlanetData = {
+    name: "No clue",
+    size: 3.5,
+    color: 0x43aa8b,
+    orbitRadius: 45,
+    orbitSpeed: 0.11,
+    orbitPhase: Math.PI * 1.5,
+    orbitTilt: 0.25,
+    info: "No clue"
+  };
+
+  const mystaraPlanetGeometry = new THREE.BoxGeometry(mystaraPlanetData.size, mystaraPlanetData.size, mystaraPlanetData.size);
+  const mystaraPlanetMaterial = new THREE.MeshPhysicalMaterial({
+    color: mystaraPlanetData.color,
+    roughness: 0.4,
+    metalness: 0.7,
+    side: THREE.DoubleSide,
+  });
+  const mystaraPlanet = new THREE.Mesh(mystaraPlanetGeometry, mystaraPlanetMaterial);
+
+  const mystaraOutlineGeometry = new THREE.BoxGeometry(mystaraPlanetData.size * 1.1, mystaraPlanetData.size * 1.1, mystaraPlanetData.size * 1.1);
+  const mystaraOutlineMaterial = new THREE.MeshBasicMaterial({
+    color: 0xffffff,
+    side: THREE.BackSide,
+    transparent: true,
+    opacity: 0,
+  });
+  const mystaraOutlineMesh = new THREE.Mesh(mystaraOutlineGeometry, mystaraOutlineMaterial);
+  mystaraPlanet.add(mystaraOutlineMesh);
+  mystaraPlanet.userData.outlineMesh = mystaraOutlineMesh;
+  mystaraPlanet.userData = { ...mystaraPlanet.userData, ...mystaraPlanetData };
+  planetScene.add(mystaraPlanet);
+  planets.push(mystaraPlanet);
 
   return planets;
 }
+
 // Create the planets
 const orbitalPlanets = createCustomPlanets();
+
 
 
 // Make the donut clickable
@@ -1850,8 +1933,13 @@ function onMouseClick(event) {
         if (isDonut) {
           info = "This is the central donut object of our universe. It represents the core of our system.";
         } else {
+          // Check if the clicked object is in the orbitalPlanets array
           const planetIndex = orbitalPlanets.indexOf(clickedObject);
-          info = `Planet ${planetIndex + 1}: An orbital planet with unique properties. It orbits around the central donut.`;
+          if (planetIndex !== -1) {
+            const planet = orbitalPlanets[planetIndex];
+            info = `<strong>${planet.userData.name}</strong>: ${planet.userData.info}`; // Make the name bold
+
+          }
         }
         
         // Create the info box
@@ -1908,6 +1996,7 @@ function onMouseClick(event) {
   }
 }
 
+
 // Add click event listener
 window.addEventListener('click', onMouseClick);
 
@@ -1957,10 +2046,17 @@ function animate() {
   if (typeof animateLights === 'function') {
     animateLights(time);
   }
-  
-  // Render the scene if renderer and camera exist
-  if (renderer && camera) {
-    renderer.render(scene, camera);
+
+  renderer.autoClear = true;
+  renderer.clear();
+
+  // Render main scene (without ambient light)
+  renderer.render(scene, camera);
+
+  // Render planet scene on top (with ambient light)
+  if (current_page == "about") {
+    renderer.autoClear = false;
+    renderer.render(planetScene, camera);
   }
 }
 
@@ -1995,7 +2091,7 @@ function hideLoading() {
 window.addEventListener('load', () => {
   // Make sure all objects have required properties
   setupInteractiveObjects();
-  
+
   // Hide loading after small delay to ensure Three.js scene is ready
   setTimeout(hideLoading, 1500);
   
@@ -2010,7 +2106,7 @@ window.addEventListener('load', () => {
   }
   
   // Start animation loop
-  animate();
+  animate()
 });
 
 // Fallback: If after 8 seconds we're still loading, force hide the loading screen
