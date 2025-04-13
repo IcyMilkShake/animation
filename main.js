@@ -646,10 +646,9 @@ scene.add(lightHelper2); // Add the light helper to the scene
 // Set initial camera position
 camera.position.set(0, 0, 30);
 
-// Define more dynamic animation states for each section
 const states = {
   home: {
-    cameraZ: 175,
+    cameraZ: 200,
     cameraX: 0,
     cameraY: 0,
     cameraRotationY: 0, // Camera looking straight ahead
@@ -658,7 +657,7 @@ const states = {
     donutPosition: { x: 0, y: 0, z: 0 }
   },
   about: {
-    cameraZ: 130,
+    cameraZ: 75,
     cameraX: 0,
     cameraY: 0,
     cameraRotationY: 0, // Camera looking straight ahead
@@ -667,13 +666,14 @@ const states = {
     donutPosition: { x: -5, y: 3, z: 0 }
   },
   projects: {
-    cameraZ: 100,
-    cameraX: 75, // Move camera to the side
-    cameraY: 0,
-    cameraRotationY: -Math.PI / 2, // Camera turned 90 degrees to the right
-    donutScale: 1.2,
+    // We'll use these values to move the camera outside of the 3D space
+    cameraZ: 350, // Move camera far back
+    cameraY: -200, // Move camera down
+    cameraX: 0,
+    cameraRotationY: 0,
+    donutScale: 0.3, // Make the donut smaller as we move away
     donutRotation: { x: Math.PI / 2, y: Math.PI / 3, z: Math.PI / 6 },
-    donutPosition: { x: 8, y: -2, z: 5 }
+    donutPosition: { x: 0, y: 50, z: 0 } // Move the donut up as we move down
   },
   contact: {
     cameraZ: 25,
@@ -942,7 +942,7 @@ function animateState(targetState, duration = 2.5) {
 
 // Variables for scroll control
 let isScrolling = false;
-const scrollDelay = 3000; // 3 seconds before next scroll allowed
+const scrollDelay = 2000; // 3 seconds before next scroll allowed
 let currentSectionIndex = 0;
 const sections = document.querySelectorAll('.section');
 
@@ -953,6 +953,35 @@ function preventScroll(e) {
     e.stopPropagation();
     return false;
   }
+}
+
+let lastScrollTime = 0;
+const scrollCooldown = 1000; // Cooldown between scroll events
+
+function setupProjectScrollHandler() {
+  const container = document.getElementById('projects-2d-container');
+  if (!container) return;
+
+  const onProjectScroll = (e) => {
+    const now = Date.now();
+    if (now - lastScrollTime < scrollCooldown) return;
+    lastScrollTime = now;
+
+    const direction = e.deltaY > 0 ? 'down' : 'up';
+
+    if (direction === 'up' && currentSectionIndex > 0) {
+      goToSection(currentSectionIndex - 1);
+    } else if (direction === 'down' && currentSectionIndex < sections.length - 1) {
+      goToSection(currentSectionIndex + 1);
+    }
+  };
+
+  container.addEventListener('wheel', onProjectScroll, { passive: false });
+
+  // Store cleanup function
+  container._removeScrollHandler = () => {
+    container.removeEventListener('wheel', onProjectScroll);
+  };
 }
 
 // Add event listeners to prevent scrolling during animations
@@ -978,10 +1007,48 @@ function goToSection(index) {
   // Animate 3D scene
   const sectionId = sections[index].id;
   current_page = sectionId;
-  if (states[sectionId]) {
-    animateState(states[sectionId]);
-  }
+
+  if (sectionId === 'projects') {
+    if (sectionId === 'projects') {
+      if (states[sectionId]) {
+        animateState(states[sectionId]);
+      }
   
+      setTimeout(() => {
+        const projectsContainer = document.getElementById("projects-2d-container")
+        if (projectsContainer) {
+          projectsContainer.classList.add('visible');
+          setupProjectScrollHandler(); // 👈 Enable scroll detection inside project view
+  
+          setTimeout(() => {
+            document.getElementById('bg').style.opacity = '0';
+          }, 800);
+        }
+      }, 1000);
+    } 
+  } 
+  // If coming from projects section to another section
+  else if (document.getElementById('projects-2d-container').classList.contains('visible')) {
+    // First hide the 2D container
+    document.getElementById('projects-2d-container').classList.remove('visible');
+    
+    // Then show the 3D scene again
+    document.getElementById('bg').style.opacity = '1';
+    console.log("yo")
+    // Animate to the new state
+    if (states[sectionId]) {
+      setTimeout(() => {
+        animateState(states[sectionId]);
+      }, 500); // Delay to let the 2D content fade out first
+    }
+  }
+  // Normal case (non-projects section)
+  else {
+    if (states[sectionId]) {
+      console.log("yos")
+      animateState(states[sectionId]);
+    }
+  }
   // Add continuous small animation to donut
   applyDonutIdleAnimation(sectionId);
   
@@ -1019,7 +1086,7 @@ function applyDonutIdleAnimation(sectionId) {
         donut.rotation.x += baseSpeed * 0.8;
         donut.rotation.z += baseSpeed * 0.3;
         donut.position.x = Math.sin(time * 1.2) * baseAmplitude;
-        scene.background = new THREE.Color(0x000020);
+        scene.background = new THREE.Color(0x040428);
         donutMaterial.color = new THREE.Color(0xffffff)
         current_page == "about"
         break;
@@ -1308,10 +1375,10 @@ function createCustomPlanets() {
     name: "No clue",
     size: 4,
     color: 0x90be6d,
-    orbitRadius: 35,
+    orbitRadius: 25,
     orbitSpeed: 0.06,
     orbitPhase: Math.PI / 2,
-    orbitTilt: 0.15,
+    orbitTilt: 3.15,
     info: "No clue"
   };
 
@@ -1515,7 +1582,7 @@ function createSciFiTextBox(text, position, isDonut) {
     textBox.classList.remove('active');
     setTimeout(() => {
       textBox.remove();
-    }, 500);
+    }, 100);
     
     // Also update the isShowingInfo flag on the object
     if (isDonut) {
@@ -1795,17 +1862,6 @@ function setupInteractiveObjects() {
 // Add event listener for mouse movement
 window.addEventListener('mousemove', checkMouseOverObjects);
 
-// Enhance the about section state
-states.about = {
-  cameraZ: 50,  // Closer to see the planets better
-  cameraX: 0,
-  cameraY: 0,
-  cameraRotationY: 0,
-  donutScale: 1.2,  // Slightly larger donut to make it more prominent
-  donutRotation: { x: Math.PI / 4, y: Math.PI / 4, z: 0 },
-  donutPosition: { x: 0, y: 0, z: 0 }  // Centered position
-};
-
 // Special handling for the about section
 function enhanceAboutSection() {
   const aboutSection = document.getElementById('about');
@@ -1996,83 +2052,135 @@ function onMouseClick(event) {
   }
 }
 
+let targetCameraX = 0;
+let targetCameraY = 0;
+
+window.addEventListener('mousemove', (event) => {
+  // Normalize mouse coords (-1 to 1)
+  const x = (event.clientX / window.innerWidth) * 2 - 1;
+  const y = -(event.clientY / window.innerHeight) * 2 + 1;
+
+  // Multiply to set how much the camera should move
+  targetCameraX = x * 6;
+  targetCameraY = y * 3.6;
+});
 
 // Add click event listener
 window.addEventListener('click', onMouseClick);
-
+let idleTime = 0;
+const fogElement = document.body.querySelector('.purple-fog');
 // Animation loop for the main site
 function animate() {
-  // Call the appropriate glow animation function if it exists
   if (typeof animationFunction === 'function') {
     animationFunction();
   }
-  
+
   requestAnimationFrame(animate);
   time += 0.01;
-  
-  // Update controls if they exist
-  if (controls) {
-    controls.update();
-  }
-  
-  // Animate stars if the function and starField exist
+  idleTime += 0.01; // Used for idle motion
+
+  if (controls) controls.update();
+
   if (typeof animateStars === 'function' && starField) {
     animateStars(starField, time);
   }
-  
-  // Update planet positions
+
   if (orbitalPlanets && orbitalPlanets.length > 0) {
     orbitalPlanets.forEach(planet => {
       if (!planet) return;
-      
+
+      if (!planet.userData.rotationSpeed) {
+        planet.userData.rotationSpeed = {
+          x: Math.random() * (0.002 - 0.0003) + 0.0003,
+          y: Math.random() * (0.002 - 0.000005) + 0.000005,
+          z: Math.random() * (0.0008 - 0.0003) + 0.0003
+        };
+      }
+
       updatePlanetPosition(planet, time);
-    
-      // Self-rotation (spin)
-      planet.rotation.x += 0.005;
-      planet.rotation.y += 0.00000000005;
-      planet.rotation.z += 0.0005;
+
+      const { x, y, z } = planet.userData.rotationSpeed;
+      planet.rotation.x += x;
+      planet.rotation.y += y;
+      planet.rotation.z += z;
     });
   }
+
   updateTextBoxPositions();
-  // Animate particles if the function exists
+
   if (typeof animateParticles === 'function') {
     animateParticles();
   }
-  
-  // Enhance about section display
+
   enhanceAboutSection();
-  
-  // Animate lights if the function exists
+
   if (typeof animateLights === 'function') {
     animateLights(time);
   }
+  // Smooth camera movement (lerping)
+  camera.position.x += (targetCameraX - camera.position.x) * 0.05;
+  camera.position.y += (targetCameraY - camera.position.y) * 0.05;
+
+  camera.lookAt(scene.position); // Always look at the center
 
   renderer.autoClear = true;
   renderer.clear();
-
-  // Render main scene (without ambient light)
   renderer.render(scene, camera);
+  console.log(current_page);
+  
+  if (current_page !== "home") {
+    fogElement.style.opacity = '1'; // Full opacity (visible)
+  } else {
+    fogElement.style.opacity = '0'; // Fully transparent (invisible)
+  }
+  
 
-  // Render planet scene on top (with ambient light)
   if (current_page == "about") {
     renderer.autoClear = false;
     renderer.render(planetScene, camera);
+  } else {
+    const textBoxes = document.getElementsByClassName('sci-fi-text-box');
+    Array.from(textBoxes).forEach(textBox => {
+      textBox.classList.remove('active');
+      setTimeout(() => {
+        textBox.remove();
+      }, 100);
+    });
+  }
+
+  const blackGradient = document.querySelector('.black-gradient');
+  if (blackGradient) {
+    if (current_page === 'projects') {
+      blackGradient.classList.add('visible');
+    } else {
+      blackGradient.classList.remove('visible');
+    }
   }
 }
 
+window.addEventListener('wheel', (e) => {
+  console.log('SCROLL DETECTED AT:', e.target);
+});
+
+
 function updatePlanetPosition(planet, time) {
   if (!planet || !planet.userData) return;
-  
-  const { orbitRadius, orbitSpeed, orbitPhase, orbitTilt } = planet.userData;
 
-  // Calculate current angle based on time and speed
-  const angle = orbitPhase + time * orbitSpeed;
+  // Randomize tilt and spin direction only once
+  if (planet.userData.orbitDirection === undefined) {       // Random tilt
+    planet.userData.orbitDirection = Math.random() < 0.5 ? 1 : -1; // 50/50 spin
+  }
 
-  // Set x and z positions to create circular orbit around origin
+  const { orbitRadius, orbitSpeed, orbitPhase, orbitTilt, orbitDirection } = planet.userData;
+
+  // Calculate current angle with direction factor
+  const angle = orbitPhase + time * orbitSpeed * orbitDirection;
+
+  // Circular orbit
   planet.position.x = orbitRadius * Math.sin(angle);
   planet.position.z = orbitRadius * Math.cos(angle);
 
-  // Apply tilt to orbit by adjusting y position
+  // Tilted orbit
   planet.position.y = orbitRadius * Math.sin(angle) * orbitTilt;
 }
 
@@ -2086,12 +2194,37 @@ function hideLoading() {
     }, 500);
   }
 }
+function initializeProjectsContent() {
+  const projectsContainer = document.getElementById('projects-2d-container');
+  if (!projectsContainer) return;
+  
+  // Example content - replace with your own
+  projectsContainer.innerHTML = `
+    <div class="projects-inner">
+      <h2>My Projects</h2>
+      <div class="projects-grid">
+        <div class="project-card">
+          <h3>Project 1</h3>
+          <p>Lorem bla bla im lazy to get the real lorem bs deal with it</p>
+        </div>
+        <div class="project-card">
+          <h3>Project 2</h3>
+          <p>haha look at me i have 0 projects hehehehaha wwwwwwwwww</p>
+        </div>
+        <div class="project-card">
+          <h3>Project 3</h3>
+          <p>nice transition? rate 1-10. rate below 10 and ill hit u with a truck</p>
+        </div>
+      </div>
+    </div>
+  `;
+}
 
 // Ensure loading screen is hidden after everything is initialized
 window.addEventListener('load', () => {
   // Make sure all objects have required properties
   setupInteractiveObjects();
-
+  initializeProjectsContent()
   // Hide loading after small delay to ensure Three.js scene is ready
   setTimeout(hideLoading, 1500);
   

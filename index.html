@@ -14,19 +14,62 @@
         "three": "https://cdnjs.cloudflare.com/ajax/libs/three.js/0.174.0/three.module.js"
       }
     }
-    </script>
+  </script>
 </head>
 <body>
+  <div class="purple-fog"></div>
   <!-- Loading Screen -->
   <div class="loading" id="loading-screen">
     <div class="spinner"></div>
   </div>
+  
   <div id="intro-screen">
     <div class="intro-title">Welcome</div>
     <div class="intro-subtitle">Click anywhere to enter</div>
   </div>
+  
   <!-- Three.js canvas -->
   <canvas id="bg"></canvas>
+  
+  <!-- Black gradient for transition -->
+  <div class="black-gradient"></div>
+  
+  <!-- 2D Projects Container -->
+  <div id="projects-2d-container" class="projects-2d-container">
+    <div class="projects-inner">
+      <h2>My Projects</h2>
+      <div class="projects-grid">
+        <div class="project-card">
+          <div class="project-image" style="background-image: url('https://via.placeholder.com/300x200')"></div>
+          <h3>Web Development</h3>
+          <p>Modern responsive websites built with React, Node.js, and Three.js for interactive 3D elements.</p>
+          <a href="#" class="project-link">View Details</a>
+        </div>
+        <div class="project-card">
+          <div class="project-image" style="background-image: url('https://via.placeholder.com/300x200')"></div>
+          <h3>Mobile Applications</h3>
+          <p>Native and cross-platform mobile apps developed for Android and iOS using Flutter and React Native.</p>
+          <a href="#" class="project-link">View Details</a>
+        </div>
+        <div class="project-card">
+          <div class="project-image" style="background-image: url('https://via.placeholder.com/300x200')"></div>
+          <h3>3D Visualization</h3>
+          <p>Interactive 3D models and environments created with Three.js and WebGL for immersive web experiences.</p>
+          <a href="#" class="project-link">View Details</a>
+        </div>
+        <div class="project-card">
+          <div class="project-image" style="background-image: url('https://via.placeholder.com/300x200')"></div>
+          <h3>UI/UX Design</h3>
+          <p>User-centered design solutions with focus on usability, accessibility, and modern aesthetics.</p>
+          <a href="#" class="project-link">View Details</a>
+        </div>
+      </div>
+      <div class="projects-nav">
+        <a href="#contact" class="btn projects-next-btn">Contact Me</a>
+        <a href="#about" class="btn projects-prev-btn">Back to About</a>
+      </div>
+    </div>
+  </div>
 
   <!-- Scrollable sections -->
   <div class="sections">
@@ -62,21 +105,7 @@
     </section>
     
     <section id="projects" class="section">
-      <div class="content-container">
-        <h1>Projects</h1>
-        <p>Explore some port?????</p>
-        <div class="project-grid">
-          <div class="project-card">
-            <h3>Languages</h3>
-            <p>aaa</p>
-          </div>
-          <div class="project-card">
-            <h3>Experience</h3>
-            <p>aaaae</p>
-          </div>
-        </div>
-        <a href="#contact" class="btn">Stalk me brother cuz thats poggers</a>
-      </div>
+      <!-- This section will be empty since we're using the 2D container instead -->
       <div class="scroll-indicator">
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
           <path d="M7.41 8.59L12 13.17l4.59-4.58L18 10l-6 6-6-6 1.41-1.41z"/>
@@ -88,7 +117,7 @@
       <div class="content-container">
         <h1>Contact uhm i mean stalk me</h1>
         <p>ways to contact.</p>
-        <p>Email: <a href="sirapat.sermcheep@gmail.com">sirapat.sermcheep@gmail.com</a></p>
+        <p>Email: <a href="mailto:sirapat.sermcheep@gmail.com">sirapat.sermcheep@gmail.com</a></p>
         <div class="social-links">
           <a href="#" class="social-link">Discord</a>
           <a href="#" class="social-link">GitHub</a>
