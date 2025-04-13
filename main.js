@@ -1196,26 +1196,36 @@ sectionsContainer.addEventListener('wheel', (event) => {
 
 // Handle touch events for mobile
 let touchStartY = 0;
-sectionsContainer.addEventListener('touchstart', (event) => {
-  touchStartY = event.touches[0].clientY;
-}, { passive: true });
 
-sectionsContainer.addEventListener('touchend', (event) => {
+function handleTouchStart(event) {
+  touchStartY = event.touches[0].clientY;
+}
+
+function handleTouchEnd(event) {
   if (isScrolling) return;
-  
+
   const touchEndY = event.changedTouches[0].clientY;
   const diff = touchStartY - touchEndY;
-  
-  if (Math.abs(diff) > 50) { // threshold to detect swipe
+
+  if (Math.abs(diff) > 50) {
     if (diff > 0) {
-      // Swipe up - go down
       goToSection(currentSectionIndex + 1);
     } else {
-      // Swipe down - go up
       goToSection(currentSectionIndex - 1);
     }
   }
-}, { passive: false });
+}
+
+// Attach to main container
+sectionsContainer.addEventListener('touchstart', handleTouchStart, { passive: true });
+sectionsContainer.addEventListener('touchend', handleTouchEnd, { passive: false });
+
+// Also attach to 2D projects container
+const projectsContainer = document.getElementById('projects-2d-container');
+if (projectsContainer) {
+  projectsContainer.addEventListener('touchstart', handleTouchStart, { passive: true });
+  projectsContainer.addEventListener('touchend', handleTouchEnd, { passive: false });
+}
 
 // Update particles in the animation loop
 function animateParticles() {
