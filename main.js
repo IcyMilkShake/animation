@@ -1034,7 +1034,6 @@ function goToSection(index) {
     
     // Then show the 3D scene again
     document.getElementById('bg').style.opacity = '1';
-    console.log("yo")
     // Animate to the new state
     if (states[sectionId]) {
       setTimeout(() => {
@@ -1045,7 +1044,6 @@ function goToSection(index) {
   // Normal case (non-projects section)
   else {
     if (states[sectionId]) {
-      console.log("yos")
       animateState(states[sectionId]);
     }
   }
@@ -2126,7 +2124,6 @@ function animate() {
   renderer.autoClear = true;
   renderer.clear();
   renderer.render(scene, camera);
-  console.log(current_page);
   
   if (current_page !== "home") {
     fogElement.style.opacity = '1'; // Full opacity (visible)
@@ -2157,11 +2154,6 @@ function animate() {
     }
   }
 }
-
-window.addEventListener('wheel', (e) => {
-  console.log('SCROLL DETECTED AT:', e.target);
-});
-
 
 function updatePlanetPosition(planet, time) {
   if (!planet || !planet.userData) return;
