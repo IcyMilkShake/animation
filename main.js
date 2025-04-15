@@ -17,7 +17,6 @@ let current_page = "home"
 
 
 function createIntroScreen() {
-  console.log('faggot')
   // Create canvas for intro
   const canvas = document.createElement('canvas');
   canvas.classList.add('intro-canvas');
