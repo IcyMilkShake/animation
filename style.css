@@ -276,10 +276,6 @@ canvas {
   border-color: rgba(46, 204, 113, 0.3);
 }
 
-#contact .content-container {
-  border-color: rgba(155, 89, 182, 0.3);
-}
-
 /* Button and Link Styles */
 .btn {
   background: rgba(255, 255, 255, 0.1);

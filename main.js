@@ -1,5 +1,9 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
+import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js';
+import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
+import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js';
+
 import { gsap } from 'gsap';
 import { Draggable } from 'gsap/Draggable';  // Import Draggable plugin
 
@@ -674,15 +678,6 @@ const states = {
     donutScale: 0.3, // Make the donut smaller as we move away
     donutRotation: { x: Math.PI / 2, y: Math.PI / 3, z: Math.PI / 6 },
     donutPosition: { x: 0, y: 50, z: 0 } // Move the donut up as we move down
-  },
-  contact: {
-    cameraZ: 25,
-    cameraX: 0,
-    cameraY: 0,
-    cameraRotationY: 0, // Camera looking straight ahead
-    donutScale: 0.8,
-    donutRotation: { x: Math.PI * 1.25, y: Math.PI / 2, z: Math.PI / 4 },
-    donutPosition: { x: 0, y: 5, z: -5 }
   }
 };
 
@@ -1055,7 +1050,7 @@ function goToSection(index) {
     isScrolling = false;
   }, scrollDelay);
 }
-
+let donutclicked = false
 // Continuous small animations for the donut based on section
 let idleAnimationId = null;
 function applyDonutIdleAnimation(sectionId) {
@@ -1085,7 +1080,16 @@ function applyDonutIdleAnimation(sectionId) {
         donut.rotation.z += baseSpeed * 0.3;
         donut.position.x = Math.sin(time * 1.2) * baseAmplitude;
         scene.background = new THREE.Color(0x040428);
-        donutMaterial.color = new THREE.Color(0xffffff)
+        if (donutclicked) {
+          donutMaterial.color = new THREE.Color(0xb57600)
+          donutMaterial.transmission = 0
+          donutMaterial.emissive = new THREE.Color(0xb57600)      // Glow color
+          donutMaterial.emissiveIntensity = 1                  // Boost glow
+          donutMaterial.metalness = 0.2
+          donutMaterial.roughness = 0.3
+        }else{
+          donutMaterial.color = new THREE.Color(0xffffff)
+        }
         current_page == "about"
         break;
       case 'projects':
@@ -1095,14 +1099,6 @@ function applyDonutIdleAnimation(sectionId) {
         scene.background = new THREE.Color(0x000020);
         donutMaterial.color = new THREE.Color(0x002f9b)
         current_page == "projects"
-        break;
-      case 'contact':
-        donut.rotation.y -= baseSpeed * 0.7;
-        donut.rotation.x += baseSpeed * 0.3;
-        donut.position.z = Math.sin(time * 0.6) * baseAmplitude;
-        scene.background = new THREE.Color(0x000020);
-        donutMaterial.color = new THREE.Color(0x6200ce)
-        current_page == "contact"
         break;
     }
     
@@ -1183,37 +1179,45 @@ document.addEventListener('keydown', (event) => {
 
 // Handle mouse wheel events for controlled scrolling
 sectionsContainer.addEventListener('wheel', (event) => {
+  if (isInsideProjectsAndScrollable()) {
+    return; // Allow normal scrolling inside project section
+  }
+
   if (!isScrolling) {
+    event.preventDefault(); // Only prevent when not in project scroll
     if (event.deltaY > 0) {
-      // Scroll down
       goToSection(currentSectionIndex + 1);
     } else {
-      // Scroll up
       goToSection(currentSectionIndex - 1);
     }
   }
 }, { passive: false });
 
-// Handle touch events for mobile
+
 let touchStartY = 0;
 
-function handleTouchStart(event) {
-  touchStartY = event.touches[0].clientY;
+function handleTouchStart(e) {
+  touchStartY = e.changedTouches[0].clientY;
 }
 
-function handleTouchEnd(event) {
-  if (isScrolling) return;
+function handleTouchEnd(e) {
+  const touchEndY = e.changedTouches[0].clientY;
+  const deltaY = touchStartY - touchEndY;
 
-  const touchEndY = event.changedTouches[0].clientY;
-  const diff = touchStartY - touchEndY;
+  if (Math.abs(deltaY) > 50 && !isScrolling) {
+    if (isInsideProjectsAndScrollable()) return;
 
-  if (Math.abs(diff) > 50) {
-    if (diff > 0) {
+    if (deltaY > 0) {
       goToSection(currentSectionIndex + 1);
     } else {
       goToSection(currentSectionIndex - 1);
     }
   }
+}
+
+function isInsideProjectsAndScrollable() {
+  const container = document.getElementById('projects-2d-container');
+  return current_page === 'projects' && container && container.classList.contains('visible') && container.scrollTop > 0;
 }
 
 // Attach to main container
@@ -1995,6 +1999,11 @@ function onMouseClick(event) {
         let info = "";
         
         if (isDonut) {
+          if (donutclicked) {
+            donutclicked = false
+          }else{
+            donutclicked = true
+          }
           info = "This is the central donut object of our universe. It represents the core of our system.";
         } else {
           // Check if the clicked object is in the orbitalPlanets array
@@ -2196,37 +2205,12 @@ function hideLoading() {
     }, 500);
   }
 }
-function initializeProjectsContent() {
-  const projectsContainer = document.getElementById('projects-2d-container');
-  if (!projectsContainer) return;
-  
-  // Example content - replace with your own
-  projectsContainer.innerHTML = `
-    <div class="projects-inner">
-      <h2>My Projects</h2>
-      <div class="projects-grid">
-        <div class="project-card">
-          <h3>Project 1</h3>
-          <p>Lorem bla bla im lazy to get the real lorem bs deal with it</p>
-        </div>
-        <div class="project-card">
-          <h3>Project 2</h3>
-          <p>haha look at me i have 0 projects hehehehaha wwwwwwwwww</p>
-        </div>
-        <div class="project-card">
-          <h3>Project 3</h3>
-          <p>nice transition? rate 1-10. rate below 10 and ill hit u with a truck</p>
-        </div>
-      </div>
-    </div>
-  `;
-}
 
 // Ensure loading screen is hidden after everything is initialized
 window.addEventListener('load', () => {
   // Make sure all objects have required properties
   setupInteractiveObjects();
-  initializeProjectsContent()
+  
   // Hide loading after small delay to ensure Three.js scene is ready
   setTimeout(hideLoading, 1500);
   
