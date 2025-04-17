@@ -18,8 +18,6 @@ gsap.registerPlugin(TextPlugin);
 let time = 0;
 let hasExploded = false;
 let current_page = "home"
-const modal = document.getElementById("browser-modal");
-modal.style.display = "flex";
 function isChrome() {
   const ua = navigator.userAgent;
   return ua.includes("Chrome") && !ua.includes("Edg") && !ua.includes("OPR");
