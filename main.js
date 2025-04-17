@@ -18,7 +18,51 @@ gsap.registerPlugin(TextPlugin);
 let time = 0;
 let hasExploded = false;
 let current_page = "home"
+const modal = document.getElementById("browser-modal");
+modal.style.display = "flex";
+function isChrome() {
+  const ua = navigator.userAgent;
+  return ua.includes("Chrome") && !ua.includes("Edg") && !ua.includes("OPR");
+}
 
+if (!isChrome()) {
+  const modal = document.getElementById("browser-modal");
+  modal.style.display = "flex";
+
+  // Continue button
+  modal.querySelector(".continue-btn").addEventListener("click", () => {
+    modal.style.display = "none";
+  });
+
+  // Copy button
+  document.getElementById("copy-btn").addEventListener("click", async () => {
+    try {
+      const input = document.getElementById("site-link");
+      await navigator.clipboard.writeText(input.value);
+
+      const copyBtn = document.getElementById("copy-btn");
+      copyBtn.textContent = "Copied!";
+      setTimeout(() => (copyBtn.textContent = "Copy Link"), 2000);
+    } catch (err) {
+      alert("Failed to copy link.");
+      console.error(err);
+    }
+  });
+
+  // Chrome button
+  document.querySelector(".redirect-btn").addEventListener("click", async (e) => {
+    e.preventDefault();
+
+    try {
+      const input = document.getElementById("site-link");
+      await navigator.clipboard.writeText(input.value);
+    } catch (err) {
+      console.error("Copy failed:", err);
+    }
+
+    window.open("https://www.google.com/chrome/", "_blank");
+  });
+}
 
 function createIntroScreen() {
   // Create canvas for intro
