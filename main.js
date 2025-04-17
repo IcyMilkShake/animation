@@ -6,9 +6,13 @@ import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPa
 
 import { gsap } from 'gsap';
 import { Draggable } from 'gsap/Draggable';  // Import Draggable plugin
+import {ScrollTrigger} from "gsap/ScrollTrigger"
+import {TextPlugin} from 'gsap/TextPlugin';
 
 // Register the GSAP Draggable plugin
 gsap.registerPlugin(Draggable);
+gsap.registerPlugin(ScrollTrigger);
+gsap.registerPlugin(TextPlugin);
 
 // Initialize time variable globally
 let time = 0;
@@ -502,7 +506,7 @@ const donutGeometry = new THREE.TorusGeometry(10, 3, 64, 128); // Increased segm
 
 // Create the transmission material
 const donutMaterial = new THREE.MeshPhysicalMaterial({
-  color: 0xffffff,      // Dark gray/black tint
+  color: 0x002f9b,      // Dark gray/black tint
   transmission: 0.85,   // Slightly reduced transparency for tinting
   thickness: 3,         // More depth effect
   roughness: 0.1,       // Smooth glass
@@ -1071,8 +1075,8 @@ function applyDonutIdleAnimation(sectionId) {
         donut.rotation.y += baseSpeed;
         donut.position.y = Math.sin(time) * baseAmplitude;
         scene.background = new THREE.Color(0xffffff);
-        donutMaterial.color = new THREE.Color(0xc92900)
-        current_page == "home"
+        donutMaterial.color = new THREE.Color(0xc92900);
+        current_page = "home";
         break;
       case 'about':
         donut.rotation.x += baseSpeed * 0.8;
@@ -1080,26 +1084,38 @@ function applyDonutIdleAnimation(sectionId) {
         donut.position.x = Math.sin(time * 1.2) * baseAmplitude;
         scene.background = new THREE.Color(0x040428);
         if (donutclicked) {
-          donutMaterial.color = new THREE.Color(0xb57600)
-          donutMaterial.transmission = 0
-          donutMaterial.emissive = new THREE.Color(0xb57600)      // Glow color
-          donutMaterial.emissiveIntensity = 1                  // Boost glow
-          donutMaterial.metalness = 0.2
-          donutMaterial.roughness = 0.3
-        }else{
-          donutMaterial.color = new THREE.Color(0xffffff)
+          donutMaterial.color = new THREE.Color(0xb57600);
+          donutMaterial.transmission = 0;
+          donutMaterial.emissive = new THREE.Color(0xb57600);
+          donutMaterial.emissiveIntensity = 1;
+          donutMaterial.metalness = 0.2;
+          donutMaterial.roughness = 0.3;
+        } else {
+          console.log("UNCLICK");
+          donutMaterial.color = new THREE.Color(0x002f9b);
+          donutMaterial.transmission = 0.85;
+          donutMaterial.thickness = 3;
+          donutMaterial.roughness = 0.1;
+          donutMaterial.metalness = 0;
+          donutMaterial.ior = 1.5;
+          donutMaterial.clearcoat = 1;
+          donutMaterial.clearcoatRoughness = 0.05;
+          donutMaterial.envMapIntensity = 1;
+          donutMaterial.emissive = new THREE.Color(0x000000);
+          donutMaterial.emissiveIntensity = 0.0;
         }
-        current_page == "about"
+        current_page = "about";
         break;
       case 'projects':
         donut.rotation.z += baseSpeed * 1.2;
         donut.position.y = Math.sin(time * 0.8) * baseAmplitude * 1.5;
         donut.position.x = Math.cos(time * 0.5) * baseAmplitude;
         scene.background = new THREE.Color(0x000020);
-        donutMaterial.color = new THREE.Color(0x002f9b)
-        current_page == "projects"
+        donutMaterial.color = new THREE.Color(0x002f9b);
+        current_page = "projects";
         break;
     }
+    
     
     idleAnimationId = requestAnimationFrame(idleAnimation);
   }
@@ -1970,59 +1986,187 @@ function enhanceAboutSection() {
   }
 }
 
-// Handle clicks on objects
+function enhancedScrambleEffect(container, fullText) {
+  container.innerHTML = "";
+  
+  if (!document.getElementById("cursor-blink-style")) {
+    const style = document.createElement("style");
+    style.id = "cursor-blink-style";
+    style.innerHTML = `
+      @keyframes cursor-blink {
+        0% { opacity: 1; }
+        50% { opacity: 0; }
+        100% { opacity: 1; }
+      }
+      .typewriter-cursor {
+        animation: cursor-blink 1.1s step-end infinite;
+      }
+    `;
+    document.head.appendChild(style);
+  }
+
+  const scrambleChars = "!<>-_\\/[]{}—=+*^?#$%&@~`|•■□▪▫▶◀▲▼►◄★☆⚡✨⚠";
+  const glitchChars = "░▒▓█▄▌▐▀■□▪▫▬▲►▼◄◊○●◘◙♠♣♥♦♪♫☼►◄↕‼¶§▬↨↑↓→←∟↔▲▼";
+
+  let charIndex = 0;
+  let isScrambling = false;
+  let scrambleInterval = null;
+
+  function getRandomChar(intensity = 1) {
+    if (Math.random() < 0.3 * intensity) {
+      return glitchChars.charAt(Math.floor(Math.random() * glitchChars.length));
+    } else {
+      return scrambleChars.charAt(Math.floor(Math.random() * scrambleChars.length));
+    }
+  }
+
+  function scrambleText(intensity = 1) {
+    if (!isScrambling) return;
+
+    const stableText = fullText.substring(0, charIndex);
+    const scrambleLength = Math.floor(Math.random() * 5 * intensity) + 2;
+    let scrambled = "";
+
+    for (let i = 0; i < scrambleLength; i++) {
+      if (Math.random() > 0.85 && intensity > 0.5) {
+        scrambled += getRandomChar(intensity) + getRandomChar(intensity);
+      } else {
+        scrambled += getRandomChar(intensity);
+      }
+    }
+
+    container.textContent = stableText + scrambled;
+  }
+
+  const typeNextChar = () => {
+    if (charIndex < fullText.length) {
+      // 3x faster speed range
+      const speed = Math.floor(Math.random() * (200 / 3)) + (80 / 10);
+      const randomValue = Math.random();
+
+      if (randomValue > 0.55) {
+        isScrambling = true;
+
+        const isNearWordEnd = fullText.charAt(charIndex) === ' ' || 
+                              fullText.charAt(charIndex + 1) === ' ' || 
+                              fullText.charAt(charIndex) === '.' || 
+                              fullText.charAt(charIndex + 1) === '.';
+
+        const intensity = isNearWordEnd ? 0.8 : 0.4;
+
+        const scrambleDuration = (Math.random() * 300 + (intensity * 200)) / 3;
+
+        scrambleInterval = setInterval(() => scrambleText(intensity), (30 + Math.random() * 20) / 3);
+
+        setTimeout(() => {
+          clearInterval(scrambleInterval);
+          isScrambling = false;
+          charIndex++;
+          container.textContent = fullText.substring(0, charIndex);
+          setTimeout(typeNextChar, speed);
+        }, scrambleDuration);
+      } else if (randomValue > 0.88) {
+        const current = fullText.substring(0, charIndex);
+        const typoType = Math.random();
+
+        if (typoType > 0.7) {
+          const correctChar = fullText.charAt(charIndex);
+          container.textContent = current + correctChar + correctChar;
+        } else if (typoType > 0.3) {
+          const keyboardRows = {
+            'q': 'was', 'w': 'qase', 'e': 'wsdr', 'r': 'edft', 't': 'rfgy', 'y': 'tghu', 'u': 'yhji',
+            'i': 'ujko', 'o': 'iklp', 'p': 'ol', 'a': 'qwsz', 's': 'awedxz', 'd': 'serfcx',
+            'f': 'drtgvc', 'g': 'ftyhbv', 'h': 'gyujnb', 'j': 'huikmn', 'k': 'jiolm',
+            'l': 'kop', 'z': 'asx', 'x': 'zsdc', 'c': 'xdfv', 'v': 'cfgb', 'b': 'vghn', 
+            'n': 'bhjm', 'm': 'njk'
+          };
+          
+          const correctChar = fullText.charAt(charIndex).toLowerCase();
+          const adjacentKeys = keyboardRows[correctChar] || 'qwertyuiopasdfghjklzxcvbnm';
+          const typoChar = adjacentKeys.charAt(Math.floor(Math.random() * adjacentKeys.length));
+          container.textContent = current + typoChar;
+        } else {
+          const typoChar = "qwertyuiopasdfghjklzxcvbnm".charAt(Math.floor(Math.random() * 26));
+          container.textContent = current + typoChar;
+        }
+
+        setTimeout(() => {
+          container.textContent = current;
+          setTimeout(typeNextChar, speed);
+        }, 200 / 10);  // fix typo faster
+      } else {
+        charIndex++;
+        container.textContent = fullText.substring(0, charIndex);
+
+        const lastChar = fullText.charAt(charIndex - 1);
+        const isPunctuation = ['.', ',', '!', '?', ':', ';', '-'].includes(lastChar);
+        const isEndOfWord = lastChar === ' ' || charIndex === fullText.length;
+
+        if (isPunctuation) {
+          setTimeout(typeNextChar, speed * 2.5); // can keep this delay, or /3 if you want very fast
+        } else if (isEndOfWord && Math.random() > 0.7) {
+          setTimeout(typeNextChar, speed * 1.8);
+        } else {
+          setTimeout(typeNextChar, speed);
+        }
+      }
+    }
+  };
+
+  setTimeout(typeNextChar, 100); // shortened initial delay too
+}
+
+
 function onMouseClick(event) {
-  // Calculate mouse position
   mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
   mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
-  
-  // Update the raycaster
   raycaster.setFromCamera(mouse, camera);
-  
-  // Check for intersections with clickable objects
+
   const clickableObjects = [donut, ...orbitalPlanets].filter(obj => obj !== undefined);
   const intersects = raycaster.intersectObjects(clickableObjects);
-  
+
   if (intersects.length > 0) {
     const clickedObject = intersects[0].object;
-    
-    if (clickedObject && clickedObject.userData && clickedObject.userData.clickable) {
-      // Check if the object is the donut
+
+    if (clickedObject.userData?.clickable) {
       const isDonut = clickedObject === donut;
-      
-      // Toggle info display
+
+      // 🚨 Mobile-specific: remove all current text boxes before doing anything else
+      if (/Mobi|Android/i.test(navigator.userAgent)) {
+        document.querySelectorAll('.sci-fi-text-box').forEach(box => {
+          box.classList.remove('active');
+          setTimeout(() => box.remove(), 200);
+        });
+
+        // Reset showing state for all clickable objects
+        clickableObjects.forEach(obj => obj.userData.isShowingInfo = false);
+      }
+
       clickedObject.userData.isShowingInfo = !clickedObject.userData.isShowingInfo;
-      
+
       if (clickedObject.userData.isShowingInfo) {
-        // Display info for the clicked object
-        let info = "";
-        
+        let fullText = "";
+
         if (isDonut) {
-          if (donutclicked) {
-            donutclicked = false
-          }else{
-            donutclicked = true
-          }
-          info = "This is the central donut object of our universe. It represents the core of our system.";
+          donutclicked = !donutclicked;
+          fullText = "This is the central donut object of our universe. It represents the core of our system.";
         } else {
-          // Check if the clicked object is in the orbitalPlanets array
           const planetIndex = orbitalPlanets.indexOf(clickedObject);
           if (planetIndex !== -1) {
             const planet = orbitalPlanets[planetIndex];
-            info = `<strong>${planet.userData.name}</strong>: ${planet.userData.info}`; // Make the name bold
-
+            fullText = `${planet.userData.name}: ${planet.userData.info}`;
           }
         }
-        
-        // Create the info box
-        createSciFiTextBox(info, {
+
+        const textBox = createSciFiTextBox("", {
           x: clickedObject.position.x,
           y: clickedObject.position.y,
           z: clickedObject.position.z,
           objectIndex: isDonut ? null : orbitalPlanets.indexOf(clickedObject)
         }, isDonut);
-        
-        // Make sure originalScale exists before using it
+
+        enhancedScrambleEffect(textBox, fullText);
+
         if (!clickedObject.userData.originalScale) {
           clickedObject.userData.originalScale = {
             x: clickedObject.scale.x,
@@ -2030,14 +2174,13 @@ function onMouseClick(event) {
             z: clickedObject.scale.z
           };
         }
-        
-        // Pulse animation
+
         const originalScale = new THREE.Vector3(
           clickedObject.userData.originalScale.x,
           clickedObject.userData.originalScale.y,
           clickedObject.userData.originalScale.z
         );
-        
+
         gsap.to(clickedObject.scale, {
           x: originalScale.x * 1.2,
           y: originalScale.y * 1.2,
@@ -2046,7 +2189,6 @@ function onMouseClick(event) {
           yoyo: true,
           repeat: 1,
           onComplete: () => {
-            // Reset to EXACTLY the original scale values
             clickedObject.scale.set(
               originalScale.x,
               originalScale.y,
@@ -2055,18 +2197,206 @@ function onMouseClick(event) {
           }
         });
       } else {
-        // Remove the text box if it exists
         const textBox = document.querySelector(`.sci-fi-text-box[data-id="${isDonut ? 'donut' : orbitalPlanets.indexOf(clickedObject)}"]`);
         if (textBox) {
           textBox.classList.remove('active');
-          setTimeout(() => {
-            textBox.remove();
-          }, 500);
+          setTimeout(() => textBox.remove(), 500);
         }
       }
     }
   }
 }
+
+
+
+let hasTriggeredTypewriterEffect = false;
+let typewriterInterval = null;
+
+// Function to trigger the typewriter effect on scroll
+function triggerTypewriterEffect() {
+  if (hasTriggeredTypewriterEffect) return; // Check if it's already triggered
+
+  const animatedText = document.querySelector("#animatedText");
+  if (!animatedText) return; // Guard clause if element doesn't exist
+  
+  // Set up CSS for the container
+  animatedText.style.position = "relative";
+  animatedText.style.display = "inline-block";
+  
+  // Clear any previous content
+  animatedText.innerHTML = "";
+  
+  // Create a text span
+  const container = document.createElement("span");
+  container.className = "typewriter-text";
+  animatedText.appendChild(container);
+  
+  // Create the cursor element
+  const cursorSpan = document.createElement("span");
+  cursorSpan.className = "typewriter-cursor";
+  cursorSpan.innerHTML = "|";
+  cursorSpan.style.display = "inline-block";
+  cursorSpan.style.marginLeft = "2px";
+  cursorSpan.style.color = "#ffffff"; // Make sure cursor is visible (white color)
+  cursorSpan.style.fontWeight = "bold"; // Make it more visible
+  animatedText.appendChild(cursorSpan);
+  
+  // Add CSS for cursor blinking animation
+  const style = document.createElement("style");
+  style.innerHTML = `
+    @keyframes cursor-blink {
+      0% { opacity: 1; }
+      50% { opacity: 0; }
+      100% { opacity: 1; }
+    }
+    .typewriter-cursor {
+      animation: cursor-blink 1.1s step-end infinite;
+    }
+  `;
+  document.head.appendChild(style);
+  
+  // Set the flag to true before animation starts
+  hasTriggeredTypewriterEffect = true;
+  
+  // The full text to type
+  const fullText = "My Projects";
+  
+  // Characters for scrambling effect
+  const scrambleChars = "!<>-_\\/[]{}—=+*^?#________";
+  
+  // Initialize tracking variables
+  let charIndex = 0;
+  let scrambleInterval = null;
+  let isScrambling = false;
+  
+  // Clear any existing interval
+  if (typewriterInterval) {
+    clearInterval(typewriterInterval);
+    typewriterInterval = null;
+  }
+  
+  // Function to get a random character from scramble chars
+  function getRandomChar() {
+    return scrambleChars.charAt(Math.floor(Math.random() * scrambleChars.length));
+  }
+  
+  // Function to scramble text
+  function scrambleText() {
+    if (!isScrambling) return;
+    
+    // Get current finished text portion
+    const stableText = fullText.substring(0, charIndex);
+    
+    // Generate scrambled portion (between 2-6 chars)
+    const scrambleLength = Math.floor(Math.random() * 4) + 2;
+    let scrambledPortion = "";
+    
+    for (let i = 0; i < scrambleLength; i++) {
+      scrambledPortion += getRandomChar();
+    }
+    
+    // Update the display
+    container.textContent = stableText + scrambledPortion;
+  }
+  
+  // Function to handle the typewriter animation
+  const typeNextChar = () => {
+    if (charIndex < fullText.length) {
+      // Generate random typing delay (between 50-300ms) for realism
+      const typingSpeed = Math.floor(Math.random() * 200) + 80;
+      const randomValue = Math.random();
+      
+      // Occasionally show scrambling effect before adding next character
+      if (randomValue > 0.7) {
+        // Start scrambling
+        isScrambling = true;
+        
+        // Create scramble effect
+        scrambleInterval = setInterval(scrambleText, 50);
+        
+        // After a brief scramble, stop and add the next real character
+        setTimeout(() => {
+          // Stop scrambling
+          clearInterval(scrambleInterval);
+          isScrambling = false;
+          
+          // Add the next character
+          charIndex++;
+          container.textContent = fullText.substring(0, charIndex);
+          
+          // Continue with the next character
+          setTimeout(typeNextChar, typingSpeed);
+        }, Math.random() * 300 + 100);
+      } 
+      // Occasionally make a typo
+      else if (randomValue > 0.92) {
+        // Simulate a typo
+        const typoChars = "qwertyuiopasdfghjklzxcvbnm";
+        const randomTypo = typoChars.charAt(Math.floor(Math.random() * typoChars.length));
+        
+        // Insert typo
+        const currentText = fullText.substring(0, charIndex);
+        container.textContent = currentText + randomTypo;
+        
+        // Then delete it after a small delay
+        setTimeout(() => {
+          container.textContent = currentText;
+          
+          // Continue with the next character
+          setTimeout(typeNextChar, typingSpeed);
+        }, 200);
+      }
+      // Normal typing
+      else {
+        charIndex++;
+        container.textContent = fullText.substring(0, charIndex);
+        
+        // Occasionally pause longer (as if thinking)
+        if (randomValue > 0.85) {
+          setTimeout(typeNextChar, Math.random() * 600 + 400);
+        } else {
+          // Regular typing speed
+          setTimeout(typeNextChar, typingSpeed);
+        }
+      }
+    } else {
+      // Text is complete
+      console.log("Typewriter animation completed");
+      // Keep the cursor blinking after completion
+    }
+  };
+  
+  // Start everything with a 3-second delay
+  setTimeout(() => {
+    setTimeout(typeNextChar, 100); // Start the typewriter effect after 3 seconds
+  }, 2000); // Delay before starting everything (3000ms = 3 seconds)
+  
+  // Set up the ScrollTrigger to start the animation
+  ScrollTrigger.create({
+    trigger: "#animatedText",
+    start: "top 80%",
+    end: "bottom top", 
+    markers: false,
+    onLeaveBack: () => {
+      // Reset if scrolling back up
+      if (charIndex < fullText.length) {
+        // Clear any scrambling in progress
+        if (scrambleInterval) {
+          clearInterval(scrambleInterval);
+          isScrambling = false;
+        }
+        
+        // Reset text
+        container.textContent = "";
+        charIndex = 0;
+        
+        // Restart animation
+        setTimeout(typeNextChar, 100);
+      }
+    }
+  });
+}
+
 
 let targetCameraX = 0;
 let targetCameraY = 0;
@@ -2085,7 +2415,8 @@ window.addEventListener('mousemove', (event) => {
 window.addEventListener('click', onMouseClick);
 let idleTime = 0;
 const fogElement = document.body.querySelector('.purple-fog');
-// Animation loop for the main site
+
+
 function animate() {
   if (typeof animationFunction === 'function') {
     animationFunction();
@@ -2149,7 +2480,6 @@ function animate() {
     fogElement.style.opacity = '0'; // Fully transparent (invisible)
   }
   
-
   if (current_page == "about") {
     renderer.autoClear = false;
     renderer.render(planetScene, camera);
@@ -2167,8 +2497,15 @@ function animate() {
   if (blackGradient) {
     if (current_page === 'projects') {
       blackGradient.classList.add('visible');
+      
+      // Call the typewriter effect function when on projects page
+      if (!hasTriggeredTypewriterEffect) {
+        triggerTypewriterEffect();
+      }
     } else {
       blackGradient.classList.remove('visible');
+      // Reset the flag when not on projects page
+      hasTriggeredTypewriterEffect = false;
     }
   }
 }
@@ -2222,10 +2559,73 @@ window.addEventListener('load', () => {
   if (typeof goToSection === 'function') {
     goToSection(0); // Start at the first section
   }
-  
+  console.log(navigator.userAgent);
   // Start animation loop
   animate()
 });
 
 // Fallback: If after 8 seconds we're still loading, force hide the loading screen
 setTimeout(hideLoading, 8000);
+
+let isMobile = /Mobi|Android|iPhone|iPad|iPod|Touch/i.test(navigator.userAgent) || ('ontouchstart' in window || navigator.maxTouchPoints > 0);
+
+function initializeDraggable() {
+  if (isMobile) return;
+
+  console.log("isMobile no");
+  gsap.from(".project-card", {
+    y: 100,
+    opacity: 0,
+    stagger: 0.15,
+    duration: 1,
+    ease: "power3.out"
+  });
+
+  document.querySelectorAll(".project-card").forEach(card => {
+    Draggable.create(card, {
+      type: "x,y",
+      edgeResistance: 0.8,
+      bounds: window,
+      inertia: false,
+      onPress() {
+        this.startX = this.x;
+        this.startY = this.y;
+      },
+      onRelease() {
+        // Estimate velocity based on position change
+        const dx = this.x - this.startX;
+        const dy = this.y - this.startY;
+        let vx = dx * 0.5;
+        let vy = dy * 0.5;
+        const friction = 0.95;
+
+        const animate = () => {
+          vx *= friction;
+          vy *= friction;
+
+          this.x += vx;
+          this.y += vy;
+          this.update();
+
+          if (Math.abs(vx) > 0.5 || Math.abs(vy) > 0.5) {
+            requestAnimationFrame(animate);
+          }
+        };
+
+        animate();
+      }
+    });
+  });
+}
+
+// Run once initially
+initializeDraggable();
+
+// Re-check device type and re-initialize if needed
+setInterval(() => {
+  const currentIsMobile = /Mobi|Android|iPhone|iPad|iPod|Touch/i.test(navigator.userAgent) || ('ontouchstart' in window || navigator.maxTouchPoints > 0);
+  if (currentIsMobile !== isMobile) {
+    isMobile = currentIsMobile;
+    initializeDraggable();
+  }
+}, 2000);

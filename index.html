@@ -14,7 +14,27 @@
         "three": "https://cdnjs.cloudflare.com/ajax/libs/three.js/0.174.0/three.module.js"
       }
     }
+    
   </script>
+  <script>
+const COLORS = {
+  background: '#0f0f12',
+  text: '#ffffff'
+};
+
+// Add CSS to the head
+const style = document.createElement('style');
+style.textContent = `
+  body {
+    background-color: ${COLORS.background};
+    color: ${COLORS.text};
+    margin: 0;
+    overflow: hidden;
+  }
+`;
+document.head.appendChild(style);
+  </script>
+  
 </head>
 <body>
   <div class="purple-fog"></div>
@@ -37,7 +57,7 @@
   <!-- 2D Projects Container -->
   <div id="projects-2d-container" class="projects-2d-container">
     <div class="projects-inner">
-      <h2>My Projects</h2>
+      <h2 class="gradient-text" id="animatedText">My Projects</h2>
       <div class="projects-grid">
         <div class="project-card">
           <div class="project-image" style="background-image: url('https://via.placeholder.com/300x200')"></div>
@@ -123,6 +143,7 @@
     setTimeout(function() {
       document.getElementById('loading-screen').classList.add('hidden');
     }, 5000);
+
   </script>
 
   <script type="module" src="main.js"></script>
