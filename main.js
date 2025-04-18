@@ -20,9 +20,10 @@ let time = 0;
 let hasExploded = false;
 let current_page = "home"
 function isMobileStartUp() {
-  const ua = navigator.userAgent || navigator.vendor || window.opera;
-  return /android|iphone|ipad|ipod|blackberry|iemobile|opera mini/i.test(ua.toLowerCase());
+  const ua = navigator.userAgent.toLowerCase();
+  return /android|iphone|ipad|ipod|blackberry|iemobile|opera mini/.test(ua);
 }
+
 
 if (isMobileStartUp()) {
   const warning = document.getElementById("mobile-warning");
@@ -500,7 +501,7 @@ function showTextTransition() {
     color: white;
     font-weight: bold;
     opacity: 0;
-    text-shadow: 0 0 10px #fff, 0 0 20px #fff, 0 0 30px #fff, 0 0 40px #fff;
+    text-shadow: 0 0 5px #fff, 0 0 20px #fff, 0 0 30px #fff, 0 0 40px #fff;
     transition: opacity 0.8s ease;
   `;
 
@@ -510,20 +511,24 @@ function showTextTransition() {
   // Responsive font sizes
   const styleTag = document.createElement('style');
   styleTag.innerHTML = `
+  .glow-text {
+    font-size: 4vw;
+    text-shadow: 0 0 6px #fff, 0 0 12px #fff, 0 0 18px #fff;
+  }
+  @media (max-width: 1024px) {
     .glow-text {
-      font-size: 4vw;
+      font-size: 6vw;
+      text-shadow: 0 0 10px #fff, 0 0 20px #fff, 0 0 30px #fff;
     }
-    @media (max-width: 1024px) {
-      .glow-text {
-        font-size: 6vw;
-      }
+  }
+  @media (max-width: 600px) {
+    .glow-text {
+      font-size: 8vw;
+      text-shadow: 0 0 12px #fff, 0 0 24px #fff, 0 0 36px #fff;
     }
-    @media (max-width: 600px) {
-      .glow-text {
-        font-size: 8vw;
-      }
-    }
-  `;
+  }
+`;
+
   document.head.appendChild(styleTag);
 
   // Scramble effect
