@@ -3,6 +3,7 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js';
 import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js';
+import { ShaderPass } from 'three/examples/jsm/postprocessing/ShaderPass.js';
 
 import { gsap } from 'gsap';
 import { Draggable } from 'gsap/Draggable';  // Import Draggable plugin
@@ -20,8 +21,16 @@ let hasExploded = false;
 let current_page = "home"
 function isChrome() {
   const ua = navigator.userAgent;
-  return ua.includes("Chrome") && !ua.includes("Edg") && !ua.includes("OPR");
+
+  // Chrome on iOS uses CriOS
+  const isChromeIOS = ua.includes("CriOS");
+
+  // Chrome on Android and Desktop
+  const isRealChrome = ua.includes("Chrome") && !ua.includes("Edg") && !ua.includes("OPR") && !ua.includes("SamsungBrowser");
+
+  return isChromeIOS || isRealChrome;
 }
+
 
 if (!isChrome()) {
   const modal = document.getElementById("browser-modal");
@@ -93,6 +102,7 @@ function createIntroScreen() {
   // Setup raycaster for mouse interaction
   const raycaster = new THREE.Raycaster();
   const mouse = new THREE.Vector2();
+  
   let selectedShape = null;
   let isDragging = false;
   const dragPlane = new THREE.Plane();
@@ -396,15 +406,6 @@ function animate() {
       shape.mesh.material.opacity = Math.max(0.3, 0.7 - (1 - distanceToCenter / 100) * 3);
     });
     
-    // Check if shapes are close enough to center to trigger explosion
-    let allShapesNearCenter = true;
-    shapes.forEach(shape => {
-      const distanceToCenter = shape.mesh.position.length();
-      if (distanceToCenter > 5) {
-        allShapesNearCenter = false;
-      }
-    });
-    
     // Trigger explosion when all shapes are near center or after a time threshold
   }
   // Handle explosion animation
@@ -483,33 +484,204 @@ function onWindowResize() {
 window.addEventListener('resize', onWindowResize);
 }
 
+function triggerExplosion() {
+  hasExploded = true;
+}
 // Handle click to proceed to main site
+// Update the click handler for intro screen with better timing control
 document.getElementById('intro-screen').addEventListener('click', () => {
-  triggerExplosion()
-    // If already exploded, just proceed to main page
+  // First trigger the explosion animation
+  triggerExplosion();
+  // Wait for the explosion animation to progress significantly before transitioning
+  setTimeout(() => {
+    showTextTransition()
+    // Fade out the intro screen
     gsap.to('#intro-screen', {
       opacity: 0,
       duration: 1,
       ease: "power2.inOut",
       onComplete: () => {
+        // Important: Make sure the intro is completely hidden BEFORE showing anything else
         document.getElementById('intro-screen').style.display = 'none';
-        // Start your main page animation here
-        // Make your main page visible
-        gsap.to('#bg', {
-          opacity: 1,
-          duration: 1,
-          ease: "power2.inOut"
-        });
-        // Start your main animation loop
-        createNavDots();
-        goToSection(0);
-        animate();
+        
+        // Make sure home page is still fully hidden
+        document.getElementById('bg').style.opacity = '0';
       }
     });
-  })
-function triggerExplosion() {
-  hasExploded = true;
+  }, 1500); // Keep the 1.5s wait for the explosion to look good
+});
+
+function showTextTransition() {
+  // Create black overlay
+  const textScreen = document.createElement('div');
+  textScreen.id = 'text-transition';
+  textScreen.style.cssText = `
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: black;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+    opacity: 0;
+  `;
+
+  // Create glowing text container
+  const glowText = document.createElement('div');
+  glowText.className = 'glow-text';
+  glowText.textContent = '';
+  glowText.style.cssText = `
+    color: white;
+    font-weight: bold;
+    opacity: 0;
+    text-shadow: 0 0 10px #fff, 0 0 20px #fff, 0 0 30px #fff, 0 0 40px #fff;
+    transition: opacity 0.8s ease;
+  `;
+
+  textScreen.appendChild(glowText);
+  document.body.appendChild(textScreen);
+
+  // Responsive font sizes
+  const styleTag = document.createElement('style');
+  styleTag.innerHTML = `
+    .glow-text {
+      font-size: 4vw;
+    }
+    @media (max-width: 1024px) {
+      .glow-text {
+        font-size: 6vw;
+      }
+    }
+    @media (max-width: 600px) {
+      .glow-text {
+        font-size: 8vw;
+      }
+    }
+  `;
+  document.head.appendChild(styleTag);
+
+  // Scramble effect
+  class TextScramble {
+    constructor(el) {
+      this.el = el;
+      this.chars = '!<>-_\\/[]{}—=+*^?#________';
+      this.update = this.update.bind(this);
+    }
+    setText(newText) {
+      const oldText = this.el.innerText;
+      const length = Math.max(oldText.length, newText.length);
+      const promise = new Promise(resolve => this.resolve = resolve);
+      this.queue = [];
+      for (let i = 0; i < length; i++) {
+        const from = oldText[i] || '';
+        const to = newText[i] || '';
+        const start = Math.floor(Math.random() * 40);
+        const end = start + Math.floor(Math.random() * 40);
+        this.queue.push({ from, to, start, end });
+      }
+      cancelAnimationFrame(this.frameRequest);
+      this.frame = 0;
+      this.update();
+      return promise;
+    }
+    update() {
+      let output = '';
+      let complete = 0;
+      for (let i = 0, n = this.queue.length; i < n; i++) {
+        let { from, to, start, end, char } = this.queue[i];
+        if (this.frame >= end) {
+          complete++;
+          output += to;
+        } else if (this.frame >= start) {
+          if (!char || Math.random() < 0.28) {
+            char = this.randomChar();
+            this.queue[i].char = char;
+          }
+          output += `<span class="dud">${char}</span>`;
+        } else {
+          output += from;
+        }
+      }
+      this.el.innerHTML = output;
+      if (complete === this.queue.length) {
+        this.resolve();
+      } else {
+        this.frameRequest = requestAnimationFrame(this.update);
+        this.frame++;
+      }
+    }
+    randomChar() {
+      return this.chars[Math.floor(Math.random() * this.chars.length)];
+    }
+  }
+
+  // Start transition in
+  gsap.to(textScreen, { opacity: 1, duration: 0.5 });
+
+  setTimeout(() => {
+    gsap.to(glowText, {
+      opacity: 1,
+      duration: 0.8,
+      ease: "power2.inOut",
+      onComplete: () => {
+        const fx = new TextScramble(glowText);
+        fx.setText('Hello World').then(() => {
+          setTimeout(() => {
+            // Reverse scramble to empty string before fading out
+            const reverseFx = new TextScramble(glowText);
+            reverseFx.setText('').then(() => {
+              gsap.to(glowText, {
+                opacity: 0,
+                duration: 0.8,
+                ease: "power2.inOut",
+                onComplete: () => {
+                  gsap.to(textScreen, {
+                    opacity: 0,
+                    duration: 1.5,
+                    ease: "power2.inOut",
+                    onComplete: () => {
+                      textScreen.remove();
+                      styleTag.remove();
+
+                      gsap.to('#bg', {
+                        opacity: 1,
+                        duration: 1,
+                        ease: "power2.inOut"
+                      });
+
+                      if (typeof createNavDots === 'function') createNavDots();
+                      if (typeof goToSection === 'function') goToSection(0);
+                      if (typeof animate === 'function' && animate !== window.animate) animate();
+                    }
+                  });
+                }
+              });
+            });
+          }, 1500); // Hold text before exit scramble
+        });
+      }
+    });
+  }, 400);
 }
+
+
+const style = document.createElement('style');
+style.textContent = `
+  .glow-text {
+    font-family: 'Arial', sans-serif;
+    letter-spacing: 0.05em;
+  }
+  .dud {
+    color: #fff !important;
+    text-shadow: 0 0 6px #fff, 0 0 12px #fff, 0 0 18px #fff !important;
+  }
+`;
+document.head.appendChild(style);
+
+
 // Call this function when the document is loaded
 document.addEventListener('DOMContentLoaded', () => {
   // Hide main page content initially
