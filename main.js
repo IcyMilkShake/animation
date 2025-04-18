@@ -19,58 +19,19 @@ gsap.registerPlugin(TextPlugin);
 let time = 0;
 let hasExploded = false;
 let current_page = "home"
-function isChrome() {
-  const ua = navigator.userAgent;
-
-  // Chrome on iOS uses CriOS
-  const isChromeIOS = ua.includes("CriOS");
-
-  // Chrome on Android and Desktop
-  const isRealChrome = ua.includes("Chrome") && !ua.includes("Edg") && !ua.includes("OPR") && !ua.includes("SamsungBrowser");
-
-  return isChromeIOS || isRealChrome;
+function isMobile() {
+  const ua = navigator.userAgent || navigator.vendor || window.opera;
+  return /android|iphone|ipad|ipod|blackberry|iemobile|opera mini/i.test(ua.toLowerCase());
 }
 
+if (isMobile()) {
+  const warning = document.getElementById("mobile-warning");
+  warning.style.display = "flex";
 
-if (!isChrome()) {
-  const modal = document.getElementById("browser-modal");
-  modal.style.display = "flex";
-
-  // Continue button
-  modal.querySelector(".continue-btn").addEventListener("click", () => {
-    modal.style.display = "none";
-  });
-
-  // Copy button
-  document.getElementById("copy-btn").addEventListener("click", async () => {
-    try {
-      const input = document.getElementById("site-link");
-      await navigator.clipboard.writeText(input.value);
-
-      const copyBtn = document.getElementById("copy-btn");
-      copyBtn.textContent = "Copied!";
-      setTimeout(() => (copyBtn.textContent = "Copy Link"), 2000);
-    } catch (err) {
-      alert("Failed to copy link.");
-      console.error(err);
-    }
-  });
-
-  // Chrome button
-  document.querySelector(".redirect-btn").addEventListener("click", async (e) => {
-    e.preventDefault();
-
-    try {
-      const input = document.getElementById("site-link");
-      await navigator.clipboard.writeText(input.value);
-    } catch (err) {
-      console.error("Copy failed:", err);
-    }
-
-    window.open("https://www.google.com/chrome/", "_blank");
+  document.getElementById("acknowledge-btn").addEventListener("click", () => {
+    warning.style.display = "none";
   });
 }
-
 function createIntroScreen() {
   // Create canvas for intro
   const canvas = document.createElement('canvas');
@@ -2337,7 +2298,7 @@ function onMouseClick(event) {
   const rect = renderer.domElement.getBoundingClientRect();
   mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
   mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
-  
+
   raycaster.setFromCamera(mouse, camera);
 
   const clickableObjects = [donut, ...orbitalPlanets].filter(obj => obj !== undefined);
