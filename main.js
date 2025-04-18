@@ -333,8 +333,10 @@ function createIntroScreen() {
 function onMouseMove(event) {
   if (isDragging && selectedShape) {
     // Update mouse coordinates
-    mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
-    mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+    
+    const rect = renderer.domElement.getBoundingClientRect();
+    mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+    mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
     
     // Update the raycaster
     raycaster.setFromCamera(mouse, camera);
@@ -2332,8 +2334,10 @@ function enhancedScrambleEffect(container, fullText) {
 
 
 function onMouseClick(event) {
-  mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
-  mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+  const rect = renderer.domElement.getBoundingClientRect();
+  mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+  mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+  
   raycaster.setFromCamera(mouse, camera);
 
   const clickableObjects = [donut, ...orbitalPlanets].filter(obj => obj !== undefined);
