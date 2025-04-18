@@ -19,12 +19,12 @@ gsap.registerPlugin(TextPlugin);
 let time = 0;
 let hasExploded = false;
 let current_page = "home"
-function isMobile() {
+function isMobileStartUp() {
   const ua = navigator.userAgent || navigator.vendor || window.opera;
   return /android|iphone|ipad|ipod|blackberry|iemobile|opera mini/i.test(ua.toLowerCase());
 }
 
-if (isMobile()) {
+if (isMobileStartUp()) {
   const warning = document.getElementById("mobile-warning");
   warning.style.display = "flex";
 
