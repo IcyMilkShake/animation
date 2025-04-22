@@ -19,300 +19,6 @@ gsap.registerPlugin(TextPlugin);
 let time = 0;
 let hasExploded = false;
 let current_page = "home"
-let engine, render, world;
-let physicsBalls = [];
-let physicsInitialized = false;
-let spawnInterval;
-
-function initializePhysics() {
-  if (physicsInitialized) return;
-  
-  // Import Matter.js if not already available
-  const script = document.createElement('script');
-  script.src = 'https://cdnjs.cloudflare.com/ajax/libs/matter-js/0.19.0/matter.min.js';
-  script.onload = setupPhysicsWorld;
-  document.head.appendChild(script);
-}
-
-function setupPhysicsWorld() {
-  // Create a physics engine
-  engine = Matter.Engine.create({
-    enableSleeping: false,
-    gravity: { x: 0, y: 1, scale: 0.001 } // Gentle gravity
-  });
-  
-  world = engine.world;
-  
-  // Get the projects container dimensions
-  const container = document.getElementById('projects-2d-container');
-  const containerRect = container.getBoundingClientRect();
-  
-  // Create a renderer that uses absolute positioning to overlay on the projects container
-  render = Matter.Render.create({
-    element: container,
-    engine: engine,
-    options: {
-      width: containerRect.width,
-      height: containerRect.height,
-      wireframes: false,
-      background: 'transparent',
-      pixelRatio: window.devicePixelRatio
-    }
-  });
-  
-  // CRITICAL FIX: Ensure the canvas is positioned correctly and contained
-  render.canvas.style.position = 'absolute';
-  render.canvas.style.top = '0';
-  render.canvas.style.left = '0';
-  render.canvas.style.width = '100%';
-  render.canvas.style.height = '100%';
-  render.canvas.style.pointerEvents = 'none'; // Allow interaction with elements below
-  
-  // Create walls to contain the balls - THIS IS THE KEY FIX
-  const wallThickness = 50;
-  const visibleHeight = container.clientHeight; // Use the visible height
-  
-  const wallOptions = { 
-    isStatic: true,
-    restitution: 0.7,
-    friction: 0.1,
-    render: { visible: false }
-  };
-  
-  // Add walls that match the visible container
-  Matter.Composite.add(world, [
-    // Bottom wall - positioned at the bottom of visible area
-    Matter.Bodies.rectangle(
-      containerRect.width/2, 
-      visibleHeight + wallThickness/2, 
-      containerRect.width, 
-      wallThickness, 
-      wallOptions
-    ),
-    // Left wall
-    Matter.Bodies.rectangle(
-      -wallThickness/2, 
-      visibleHeight/2, 
-      wallThickness, 
-      visibleHeight, 
-      wallOptions
-    ),
-    // Right wall
-    Matter.Bodies.rectangle(
-      containerRect.width + wallThickness/2, 
-      visibleHeight/2, 
-      wallThickness, 
-      visibleHeight, 
-      wallOptions
-    ),
-    // Top wall
-    Matter.Bodies.rectangle(
-      containerRect.width/2, 
-      -wallThickness/2, 
-      containerRect.width, 
-      wallThickness, 
-      wallOptions
-    )
-  ]);
-  
-  // Add a ball removal zone below the visible area to clean up any escaped balls
-  Matter.Events.on(engine, 'afterUpdate', () => {
-    // Check all physics balls
-    for (let i = physicsBalls.length - 1; i >= 0; i--) {
-      const ball = physicsBalls[i];
-      // If a ball is significantly below the visible container
-      if (ball.position.y > visibleHeight + 100) {
-        // Remove it from the world and our array
-        Matter.World.remove(world, ball);
-        physicsBalls.splice(i, 1);
-      }
-    }
-  });
-  
-  // Start the engine and renderer
-  Matter.Render.run(render);
-  
-  // Create a runner
-  const runner = Matter.Runner.create();
-  Matter.Runner.run(runner, engine);
-  
-  // Add mouse control for the balls
-  const mouse = Matter.Mouse.create(render.canvas);
-  const mouseConstraint = Matter.MouseConstraint.create(engine, {
-    mouse: mouse,
-    constraint: {
-      stiffness: 0.2,
-      render: { visible: false }
-    }
-  });
-  
-  Matter.Composite.add(world, mouseConstraint);
-  render.mouse = mouse;
-  
-  // Handle window resize to update physics boundaries
-  window.addEventListener('resize', () => {
-    const newWidth = container.clientWidth;
-    const newHeight = container.clientHeight;
-    
-    // Update renderer size - FIX: Matter.js doesn't have setSize function
-    render.options.width = newWidth;
-    render.options.height = newHeight;
-    render.canvas.width = newWidth;
-    render.canvas.height = newHeight;
-    
-    // Update pixel ratio
-    Matter.Render.setPixelRatio(render, window.devicePixelRatio);
-    
-    // Remove old walls
-    const bodies = Matter.Composite.allBodies(world);
-    bodies.forEach(body => {
-      if (body.isStatic && body.label !== "MouseConstraint") {
-        Matter.World.remove(world, body);
-      }
-    });
-    
-    // Add new walls with updated dimensions
-    const wallThickness = 50;
-    Matter.Composite.add(world, [
-      // Bottom wall
-      Matter.Bodies.rectangle(
-        newWidth/2, 
-        newHeight + wallThickness/2, 
-        newWidth, 
-        wallThickness, 
-        wallOptions
-      ),
-      // Left wall
-      Matter.Bodies.rectangle(
-        -wallThickness/2, 
-        newHeight/2, 
-        wallThickness, 
-        newHeight, 
-        wallOptions
-      ),
-      // Right wall
-      Matter.Bodies.rectangle(
-        newWidth + wallThickness/2, 
-        newHeight/2, 
-        wallThickness, 
-        newHeight, 
-        wallOptions
-      ),
-      // Top wall
-      Matter.Bodies.rectangle(
-        newWidth/2, 
-        -wallThickness/2, 
-        newWidth, 
-        wallThickness, 
-        wallOptions
-      )
-    ]);
-  });
-  
-  // Start automatically spawning balls
-  startAutoSpawning(visibleHeight);
-  
-  physicsInitialized = true;
-}
-
-function startAutoSpawning(visibleHeight) {
-  // Spawn a few balls initially
-  spawnRandomBalls(3, visibleHeight);
-  
-  // Continue spawning balls periodically
-  spawnInterval = setInterval(() => {
-    // Only spawn if we're not exceeding a reasonable limit
-    if (physicsBalls.length < 20) {
-      spawnRandomBalls(1, visibleHeight);
-    } else {
-      // Remove some old balls if we have too many
-      removeOldestBalls(5);
-    }
-  }, 100); // Spawn a new ball every 3 seconds
-}
-
-function removeOldestBalls(count) {
-  if (physicsBalls.length <= count) return;
-  
-  for (let i = 0; i < count; i++) {
-    const oldBall = physicsBalls.shift(); // Remove oldest ball
-    Matter.World.remove(world, oldBall);
-  }
-}
-
-function spawnRandomBalls(count = 1, visibleHeight) {
-  const container = document.getElementById('projects-2d-container');
-  const containerWidth = container.clientWidth;
-  
-  for (let i = 0; i < count; i++) {
-    // Randomize properties with better visual appeal
-    const size = Math.random();
-    const radius = size * 20 + 10; // 10-30px radius based on size
-    const x = Math.random() * (containerWidth - radius * 2) + radius;
-    
-    // Position balls just above the visible area
-    const y = -radius - Math.random() * 50;
-    
-    // Generate visually appealing colors
-    let color;
-    const colorType = Math.floor(Math.random() * 3);
-    
-    if (colorType === 0) {
-      // Vibrant colors
-      const hue = Math.floor(Math.random() * 360);
-      color = `hsl(${hue}, 80%, 60%)`;
-    } else if (colorType === 1) {
-      // Pastels
-      const hue = Math.floor(Math.random() * 360);
-      color = `hsl(${hue}, 70%, 80%)`;
-    } else {
-      // Gradients
-      const canvas = document.createElement('canvas');
-      canvas.width = radius * 2;
-      canvas.height = radius * 2;
-      const ctx = canvas.getContext('2d');
-      
-      const gradient = ctx.createRadialGradient(
-        radius, radius, 0,
-        radius, radius, radius
-      );
-      
-      const hue1 = Math.floor(Math.random() * 360);
-      const hue2 = (hue1 + 30 + Math.floor(Math.random() * 60)) % 360;
-      
-      gradient.addColorStop(0, `hsl(${hue1}, 80%, 60%)`);
-      gradient.addColorStop(1, `hsl(${hue2}, 80%, 50%)`);
-      
-      ctx.fillStyle = gradient;
-      ctx.fillRect(0, 0, radius * 2, radius * 2);
-      
-      color = ctx.createPattern(canvas, 'no-repeat');
-    }
-    
-    // Create the ball with improved physics properties
-    const ball = Matter.Bodies.circle(x, y, radius, {
-      restitution: 0.7 + Math.random() * 0.3, // 0.7-1.0 bounciness
-      friction: 0.05 + Math.random() * 0.1,
-      frictionAir: 0.001 + Math.random() * 0.005,
-      density: 0.001 + size * 0.002, // Size-based density for better physics
-      render: {
-        fillStyle: color,
-        strokeStyle: '#FFFFFF',
-        lineWidth: 1 + Math.floor(Math.random() * 2)
-      },
-      // Add a small initial velocity for more natural appearance
-      velocity: {
-        x: (Math.random() - 0.5) * 2,
-        y: Math.random() * 1
-      }
-    });
-    
-    Matter.Composite.add(world, ball);
-    physicsBalls.push(ball);
-  }
-}
-
-
 function isMobileStartUp() {
   const ua = navigator.userAgent.toLowerCase();
   return /android|iphone|ipad|ipod|blackberry|iemobile|opera mini/.test(ua);
@@ -327,7 +33,6 @@ if (isMobileStartUp()) {
     warning.style.display = "none";
   });
 }
-
 function createIntroScreen() {
   // Create canvas for intro
   const canvas = document.createElement('canvas');
@@ -1475,6 +1180,7 @@ function goToSection(index) {
   document.querySelectorAll('.nav-dot').forEach((dot, i) => {
     dot.classList.toggle('active', i === index);
   });
+  
   // Scroll to section
   sections[index].scrollIntoView({ behavior: 'smooth' });
   
@@ -1508,7 +1214,6 @@ function goToSection(index) {
     
     // Then show the 3D scene again
     document.getElementById('bg').style.opacity = '1';
-    cleanupPhysics()
     // Animate to the new state
     if (states[sectionId]) {
       setTimeout(() => {
@@ -1530,18 +1235,6 @@ function goToSection(index) {
     isScrolling = false;
   }, scrollDelay);
 }
-const originalGoToSection = goToSection;
-goToSection = function(index) {
-  originalGoToSection(index);
-  
-  const sectionId = sections[index].id;
-  if (sectionId === 'projects') {
-    setTimeout(() => {
-      console.log("adas")
-      initializePhysics();
-    }, 1500); // Wait for the animation to complete
-  }
-};
 let donutclicked = false
 // Continuous small animations for the donut based on section
 let idleAnimationId = null;
@@ -2794,7 +2487,7 @@ function triggerTypewriterEffect() {
   const typeNextChar = () => {
     if (charIndex < fullText.length) {
       // Generate random typing delay (between 50-300ms) for realism
-      const typingSpeed = 0;
+      const typingSpeed = Math.floor(Math.random() * 200) + 80;
       const randomValue = Math.random();
       
       // Occasionally show scrambling effect before adding next character
@@ -2860,7 +2553,7 @@ function triggerTypewriterEffect() {
   // Start everything with a 3-second delay
   setTimeout(() => {
     setTimeout(typeNextChar, 100); // Start the typewriter effect after 3 seconds
-  }, 1250); // Delay before starting everything (3000ms = 3 seconds)
+  }, 2000); // Delay before starting everything (3000ms = 3 seconds)
   
   // Set up the ScrollTrigger to start the animation
   ScrollTrigger.create({
@@ -3120,157 +2813,3 @@ setInterval(() => {
     initializeDraggable();
   }
 }, 2000);
-function setupCardInteraction() {
-  // Check if Draggable from GSAP is available
-  if (typeof Draggable !== 'undefined' && physicsInitialized) {
-    document.querySelectorAll('.project-card').forEach(card => {
-      // Create a physics body for each card (invisible but will interact with balls)
-      const cardRect = card.getBoundingClientRect();
-      const container = document.getElementById('projects-2d-container');
-      const containerRect = container.getBoundingClientRect();
-      
-      // Convert to relative coordinates within the physics world
-      const relX = cardRect.left - containerRect.left + cardRect.width/2;
-      const relY = cardRect.top - containerRect.top + cardRect.height/2;
-      
-      // Create a sensor body for the card
-      const cardBody = Matter.Bodies.rectangle(
-        relX,
-        relY,
-        cardRect.width, 
-        cardRect.height,
-        {
-          isSensor: true,  // Won't physically block balls but will detect collisions
-          isStatic: true,
-          render: {
-            visible: false  // Make it invisible
-          },
-          label: "card_" + Math.random().toString(36).substr(2, 9) // Unique label
-        }
-      );
-      
-      // Store the card element reference in the body for later use
-      cardBody.cardElement = card;
-      Matter.World.add(world, cardBody);
-      
-      // Configure draggable
-      const draggable = Draggable.get(card) || Draggable.create(card, {
-        type: "x,y",
-        edgeResistance: 0.8,
-        bounds: window,
-        inertia: true
-      })[0];
-      
-      // Store original handlers
-      const originalOnDrag = draggable.vars.onDrag || function() {};
-      const originalOnRelease = draggable.vars.onRelease || function() {};
-      
-      // Update card body position when dragged
-      draggable.vars.onDrag = function() {
-        originalOnDrag.call(this);
-        
-        // Update physics body position
-        const newCardRect = card.getBoundingClientRect();
-        const newRelX = newCardRect.left - containerRect.left + newCardRect.width/2;
-        const newRelY = newCardRect.top - containerRect.top + newCardRect.height/2;
-        
-        Matter.Body.setPosition(cardBody, {
-          x: newRelX,
-          y: newRelY
-        });
-        
-        // Add impulse to nearby balls
-        if (physicsBalls.length > 0) {
-          physicsBalls.forEach(ball => {
-            const dx = ball.position.x - newRelX;
-            const dy = ball.position.y - newRelY;
-            const distance = Math.sqrt(dx*dx + dy*dy);
-            
-            // If ball is close to the card, push it
-            if (distance < cardRect.width * 0.8) {
-              const pushFactor = 0.0005 / (distance/100 + 0.1);
-              const velX = this.deltaX * pushFactor;
-              const velY = this.deltaY * pushFactor;
-              
-              Matter.Body.applyForce(ball, ball.position, {
-                x: velX,
-                y: velY
-              });
-            }
-          });
-        }
-      };
-      
-      // Handle release with momentum transfer
-      draggable.vars.onRelease = function() {
-        originalOnRelease.call(this);
-        
-        // Apply extra impulse to nearby balls when card is released
-        if (physicsBalls.length > 0 && Math.abs(this.deltaX) + Math.abs(this.deltaY) > 10) {
-          const newCardRect = card.getBoundingClientRect();
-          const newRelX = newCardRect.left - containerRect.left + newCardRect.width/2;
-          const newRelY = newCardRect.top - containerRect.top + newCardRect.height/2;
-          
-          physicsBalls.forEach(ball => {
-            const dx = ball.position.x - newRelX;
-            const dy = ball.position.y - newRelY;
-            const distance = Math.sqrt(dx*dx + dy*dy);
-            
-            // If ball is close to the card, give it a stronger impulse
-            if (distance < cardRect.width * 1.2) {
-              const pushFactor = 0.0015 / (distance/100 + 0.1);
-              const velX = this.deltaX * pushFactor;
-              const velY = this.deltaY * pushFactor;
-              
-              Matter.Body.setVelocity(ball, {
-                x: ball.velocity.x + velX,
-                y: ball.velocity.y + velY
-              });
-            }
-          });
-        }
-      };
-    });
-  }
-}
-    
-    // Function to clean up physics when leaving projects section
-    function cleanupPhysics() {
-      if (!physicsInitialized) return;
-      
-      // Clear the auto spawn interval
-      if (spawnInterval) {
-        clearInterval(spawnInterval);
-        spawnInterval = null;
-      }
-      
-      // If Matter.js is available, clean up all resources
-      if (typeof Matter !== 'undefined' && render) {
-        Matter.Render.stop(render);
-        Matter.World.clear(world);
-        Matter.Engine.clear(engine);
-        
-        if (render.canvas && render.canvas.parentElement) {
-          render.canvas.remove();
-        }
-        
-        render.canvas = null;
-        render.context = null;
-        render.textures = {};
-        
-        // Clear the physics balls array
-        physicsBalls = [];
-        physicsInitialized = false;
-      }
-    }
-      // Fix for mobile devices
-      document.addEventListener('DOMContentLoaded', () => {
-        const mobileWarning = document.getElementById('mobile-warning');
-        if (isMobile && mobileWarning) {
-          mobileWarning.style.display = 'flex';
-          
-          document.getElementById('acknowledge-btn').addEventListener('click', () => {
-            mobileWarning.style.display = 'none';
-          });
-        }
-      });
