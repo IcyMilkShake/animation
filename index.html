@@ -18,6 +18,7 @@
   </script>
   
 </head>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
 <body>
   <div id="mobile-warning" style="display: none;">
     <div class="modal-content">
@@ -122,6 +123,109 @@
 
   <!-- This script handles the loading screen -->
   <script>
+document.addEventListener('DOMContentLoaded', () => {
+  const introScreen = document.getElementById('intro-screen');
+  const introTitle = document.querySelector('.intro-title');
+  const introSubtitle = document.querySelector('.intro-subtitle');
+
+  // Split the title text into individual characters for animation
+  const titleText = introTitle.textContent;
+  introTitle.innerHTML = '';
+
+  // Create spans for each character
+  titleText.split('').forEach(char => {
+    const span = document.createElement('span');
+    span.textContent = char;
+    span.style.display = 'inline-block';
+    span.style.opacity = '0';
+    span.style.transform = 'translateY(30px)';
+    introTitle.appendChild(span);
+  });
+
+  // Set initial state for subtitle
+  gsap.set(introSubtitle, {
+    opacity: 0,
+    y: 20
+  });
+
+  let pulseTween; // to hold pulse animation so we can kill it
+
+  // Create the intro animation timeline with delay
+  const introTimeline = gsap.timeline({ delay: 1.5 });
+
+  // Animate in each character of the title
+  introTimeline.to('.intro-title span', {
+    opacity: 1,
+    y: 0,
+    duration: 0.8,
+    stagger: 0.08,
+    ease: "back.out(1.7)"
+  });
+
+  // Animate in the subtitle
+  introTimeline.to(introSubtitle, {
+    opacity: 1,
+    y: 0,
+    duration: 0.8,
+    ease: "power2.out"
+  }, "-=0.3");
+
+  // Add pulse animation to subtitle AFTER everything fades in
+  introTimeline.call(() => {
+    pulseTween = gsap.to(introSubtitle, {
+      scale: 1.05,
+      repeat: -1,
+      yoyo: true,
+      duration: 1.2,
+      ease: "sine.inOut"
+    });
+  });
+
+  // Add click event to the intro screen
+  introScreen.addEventListener('click', exitIntroScreen);
+
+  // Function to handle the exit animation
+  function exitIntroScreen() {
+    // Remove the click event listener to prevent multiple triggers
+    introScreen.removeEventListener('click', exitIntroScreen);
+
+    // Kill pulse animation if it's running
+    if (pulseTween) pulseTween.kill();
+
+    // Create the exit animation timeline
+    const exitTimeline = gsap.timeline({
+      onComplete: () => {
+        // Hide intro screen when animation completes
+        introScreen.style.display = 'none';
+      }
+    });
+
+    // Float up and fade out title characters
+    exitTimeline.to('.intro-title span', {
+      y: -50,
+      opacity: 0,
+      duration: 0.7,
+      stagger: 0.03,
+      ease: "back.in(1.2)"
+    }, 0);
+
+    // Float up and fade out subtitle
+    exitTimeline.to(introSubtitle, {
+      y: -30,
+      opacity: 0,
+      duration: 0.5,
+      ease: "power2.in"
+    }, 0.1);
+
+    // Fade out the entire intro screen
+    exitTimeline.to(introScreen, {
+      backgroundColor: 'rgba(0, 0, 0, 0)',
+      duration: 0.8
+    }, 0.2);
+    exitTimeline.to({}, { duration: 1.5 });
+  }
+});
+
     // Hide loading screen when page is fully loaded
     window.addEventListener('load', function() {
       setTimeout(function() {

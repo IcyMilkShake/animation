@@ -191,38 +191,6 @@ canvas {
   hyphens: auto;
 }
 
-/* Navigation Dots */
-.nav-dots {
-  position: fixed;
-  right: 20px;
-  top: 50%;
-  transform: translateY(-50%);
-  display: flex;
-  flex-direction: column;
-  z-index: 10;
-}
-
-.nav-dot {
-  width: 12px;
-  height: 12px;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.5);
-  margin: 10px 0;
-  cursor: pointer;
-  transition: all 0.3s ease;
-}
-
-.nav-dot:hover {
-  background: rgba(255, 255, 255, 0.8);
-  transform: scale(1.2);
-}
-
-.nav-dot.active {
-  background: #fff;
-  box-shadow: 0 0 10px rgba(255, 255, 255, 0.8);
-  transform: scale(1.3);
-}
-
 /* Content Containers */
 .content-container {
   background: rgba(255, 255, 255, 0.03);
@@ -605,16 +573,6 @@ a:hover {
     padding: 30px;
     width: 85%;
   }
-  
-  .nav-dots {
-    right: 15px;
-  }
-  
-  .nav-dot {
-    width: 10px;
-    height: 10px;
-    margin: 8px 0;
-  }
 }
 
 @media (max-width: 768px) {
@@ -629,16 +587,6 @@ a:hover {
   .content-container {
     padding: 25px;
     width: 90%;
-  }
-
-  .nav-dots {
-    right: 10px;
-  }
-  
-  .nav-dot {
-    width: 8px;
-    height: 8px;
-    margin: 6px 0;
   }
   
   .scroll-indicator {
@@ -807,16 +755,6 @@ a:hover {
     height: 20px;
   }
   
-  .nav-dots {
-    right: 5px;
-  }
-  
-  .nav-dot {
-    width: 6px;
-    height: 6px;
-    margin: 5px 0;
-  }
-  
   #about.section {
     padding-bottom: 60px; /* Reduced padding for small screens */
   }
@@ -873,12 +811,6 @@ a:hover {
   .scroll-indicator {
     bottom: 15px; /* Moves indicator further up for better accessibility */
   }
-
-  /* Adjust navigation dots for mobile */
-  .nav-dots {
-    right: 5px; /* Moves the nav dots closer to the right edge */
-  }
-
   /* Adjust sci-fi text box for smaller screens */
   .sci-fi-text-box {
     padding: 12px;

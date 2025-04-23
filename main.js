@@ -33,7 +33,11 @@ if (isMobileStartUp()) {
     warning.style.display = "none";
   });
 }
+
+
+
 function createIntroScreen() {
+  
   // Create canvas for intro
   const canvas = document.createElement('canvas');
   canvas.classList.add('intro-canvas');
@@ -223,7 +227,6 @@ function createIntroScreen() {
   
   // Text elements with GSAP animations
   const titleElement = document.querySelector('.intro-title');
-  const subtitleElement = document.querySelector('.intro-subtitle');
   
   gsap.to(titleElement, {
     opacity: 1,
@@ -232,15 +235,6 @@ function createIntroScreen() {
     ease: "power2.out"
   });
   
-  gsap.to(subtitleElement, {
-    opacity: 1,
-    duration: 1,
-    delay: 2,
-    ease: "power2.out",
-    repeatDelay: 1,
-    repeat: -1,
-    yoyo: true
-  });
   
   // Animation variables
   let introTime = 0; // Local time variable for the intro animation
@@ -373,46 +367,58 @@ function animate() {
     // Trigger explosion when all shapes are near center or after a time threshold
   }
   // Handle explosion animation
-  else if (hasExploded && !introComplete) {
-    // Animate the exploding shapes
-    shapes.forEach(shape => {
-      if (!isDragging || selectedShape !== shape.mesh) {
-        // Move in explosion direction
-        shape.mesh.position.x += shape.explosionDirection.x * shape.explosionSpeed;
-        shape.mesh.position.y += shape.explosionDirection.y * shape.explosionSpeed;
-        shape.mesh.position.z += shape.explosionDirection.z * shape.explosionSpeed;
-        
-        // Add some gravity effect
-        shape.explosionDirection.y -= 0.01;
-        
-        // Slow down over time
-        shape.explosionSpeed *= 0.99;
-        
-        // Rotate during explosion
-        shape.mesh.rotation.x += shape.rotationSpeed.x * 2;
-        shape.mesh.rotation.y += shape.rotationSpeed.y * 2;
-        shape.mesh.rotation.z += shape.rotationSpeed.z * 2;
-        
-        // Fade in during explosion
-        if (shape.mesh.material.opacity < 0.7) {
-          shape.mesh.material.opacity += 0.02;
-        }
-        
-        // Grow slightly during explosion
-        if (shape.mesh.scale.x < 1) {
-          const growFactor = 1.02;
-          shape.mesh.scale.x *= growFactor;
-          shape.mesh.scale.y *= growFactor;
-          shape.mesh.scale.z *= growFactor;
-        }
-      }
-    });
-    
-    // Mark intro as complete after all shapes have exploded
-    if (introTime > 8) {
-      introComplete = true;
+  // Inside the explosion animation block
+else if (hasExploded && !introComplete) {
+  const minExplosionSpeed = 0;  // Minimum speed to prevent drying out
+  const speedDecay = 0.99; // Decay rate for speed
+  const additionalForce = 0.002; // Small force to keep the explosion energetic
+
+  // Animate the exploding shapes
+  shapes.forEach(shape => {
+    if (isDragging && selectedShape === shape.mesh) return; // Skip explosion for dragging shapes
+
+    // Move in explosion direction
+    shape.mesh.position.x += shape.explosionDirection.x * shape.explosionSpeed;
+    shape.mesh.position.y += shape.explosionDirection.y * shape.explosionSpeed;
+    shape.mesh.position.z += shape.explosionDirection.z * shape.explosionSpeed;
+
+    // Add some gravity effect
+    shape.explosionDirection.y -= 0.01; // Adjust gravity effect if necessary
+
+    // Slow down over time (but avoid going below minimum speed)
+    shape.explosionSpeed = Math.max(shape.explosionSpeed * speedDecay, minExplosionSpeed);
+
+    if (shape.explosionSpeed < minExplosionSpeed) {
+      shape.explosionSpeed = minExplosionSpeed;
     }
+    // Optionally, apply additional force to keep explosion energetic
+    shape.explosionSpeed += additionalForce;
+
+    // Rotate during explosion
+    shape.mesh.rotation.x += shape.rotationSpeed.x * 2;
+    shape.mesh.rotation.y += shape.rotationSpeed.y * 2;
+    shape.mesh.rotation.z += shape.rotationSpeed.z * 2;
+
+    // Fade in during explosion
+    if (shape.mesh.material.opacity < 0.7) {
+      shape.mesh.material.opacity += 0.02;
+    }
+
+    // Grow slightly during explosion
+    if (shape.mesh.scale.x < 1) {
+      const growFactor = 1.02;
+      shape.mesh.scale.x *= growFactor;
+      shape.mesh.scale.y *= growFactor;
+      shape.mesh.scale.z *= growFactor;
+    }
+  });
+
+  // Mark intro as complete after all shapes have exploded
+  if (introTime > 8) {
+    introComplete = true;
   }
+}
+
   // Handle post-explosion state (interactive mode)
   else if (introComplete) {
     // Keep shapes slowly rotating when not being dragged
@@ -620,7 +626,7 @@ function showTextTransition() {
                         ease: "power2.inOut"
                       });
 
-                      if (typeof createNavDots === 'function') createNavDots();
+                      if (typeof createNavMenu === 'function')   createNavMenu();
                       if (typeof goToSection === 'function') goToSection(0);
                       if (typeof animate === 'function' && animate !== window.animate) animate();
                     }
@@ -707,9 +713,102 @@ donut.castShadow = true;
 donut.receiveShadow = true;
 scene.add(donut);
 
+const comets = [];
+
+function createComet() {
+  const cometMaterial = new THREE.MeshBasicMaterial({
+    color: 0xffffff,               // Bright white color
+    transparent: true,
+    opacity: 1,
+    blending: THREE.AdditiveBlending, // Makes glow effect stronger
+    depthWrite: false,                // Prevents z-fighting glow issues
+  });
+  
+
+  const comet = new THREE.Mesh(
+    new THREE.SphereGeometry(0.2, 6, 6),
+    cometMaterial
+  );
+
+  const x = (Math.random() - 0.5) * 150;
+  const y = (Math.random() - 0.5) * 150;
+  const z = 75 - 200;
+
+  comet.position.set(x, y, z);
+
+  // Random forward velocity
+  comet.userData.velocity = new THREE.Vector3(
+    (Math.random() - 0.5) * 0.3,
+    (Math.random() - 0.5) * 0.3,
+    2 + Math.random() * 1
+  );
+
+  comet.userData.opacity = 1;
+  comet.userData.trailPoints = [comet.position.clone()]; // for trail
+  comet.userData.trailMesh = null;
+
+  scene.add(comet);
+  comets.push(comet);
+
+  setTimeout(() => {
+    scene.remove(comet);
+    if (comet.userData.trailMesh) scene.remove(comet.userData.trailMesh);
+    comets.splice(comets.indexOf(comet), 1);
+  }, 5000);
+}
+
+
+// Occasionally spawn comets
+setInterval(() => {
+  if (Math.random() < 0.3) { // 30% chance every 0.3 seconds
+    createComet();
+  }
+}, 500);
+
+// Update comet positions in your animation loop
+function updateComets(delta) {
+  comets.forEach((comet) => {
+    // Move comet based on velocity
+    comet.position.addScaledVector(comet.userData.velocity, delta * 30);
+
+    // Add to trail history (increase the number of trail points to make it longer)
+    comet.userData.trailPoints.push(comet.position.clone());
+    if (comet.userData.trailPoints.length > 30) { // 3x longer trail
+      comet.userData.trailPoints.shift(); // keep it within the new length
+    }
+
+    // Fade out comet
+    comet.userData.opacity -= delta * 0.2;
+    comet.material.opacity = Math.max(0, comet.userData.opacity);
+
+    // Draw trail
+    if (comet.userData.trailMesh) {
+      scene.remove(comet.userData.trailMesh);
+    }
+
+    // Only draw a trail if there are enough points (and the trail is visible)
+    if (comet.userData.trailPoints.length >= 3) { // Ensure trail has enough points
+      const curve = new THREE.CatmullRomCurve3(comet.userData.trailPoints);
+      const geometry = new THREE.TubeGeometry(curve, 16, 0.05, 4, false); // Increase the segments to make the trail smoother
+      const trailMaterial = new THREE.MeshBasicMaterial({
+        color: 0xffffff,
+        transparent: true,
+        opacity: Math.max(0, comet.userData.opacity * 0.6),
+      });
+
+      const trail = new THREE.Mesh(geometry, trailMaterial);
+      comet.userData.trailMesh = trail;
+      scene.add(trail);
+    }
+  });
+}
+
+
+
+
 // Add scattered particles around the middle (no ring shape)
 const middleStarsGeometry = new THREE.BufferGeometry();
-const middleStarsCount = 1000; // Small number for subtle scattered particles around the middle
+const middleStarsCount = 500; // Small number for subtle scattered particles around the middle
 
 const middleStarsPosArray = new Float32Array(middleStarsCount * 3);
 const middleStarsColorArray = new Float32Array(middleStarsCount * 3);
@@ -856,7 +955,7 @@ const states = {
   },
   projects: {
     // We'll use these values to move the camera outside of the 3D space
-    cameraZ: 350, // Move camera far back
+    cameraZ: 250, // Move camera far back
     cameraY: -200, // Move camera down
     cameraX: 0,
     cameraRotationY: 0,
@@ -886,7 +985,7 @@ function tween(start, end, t, easingFn) {
 
 // Use instanced mesh for better performance
 function createStarField() {
-  const starCount = 1000;
+  const starCount = 1750;
   
   // Use low-poly geometry for stars
   const geometry = new THREE.SphereGeometry(0.05, 8, 6);
@@ -920,15 +1019,24 @@ function createStarField() {
   // Create arrays to store star properties for animation
   const starProperties = [];
   
+  // Z range where stars should not spawn
+  const zMin = 35; // Prevent stars from spawning closer than 35 to Z = 75
+  const zMax = 75; // Prevent stars from spawning further than 115 from Z = 75
+  
   for (let i = 0; i < starCount; i++) {
-    // Set random position in a larger sphere around the camera
-    const radius = 50 + Math.random() * 150; // Spread stars further out
-    const theta = Math.random() * Math.PI * 2;
-    const phi = Math.random() * Math.PI;
+    let radius, theta, phi, x, y, z;
     
-    const x = radius * Math.sin(phi) * Math.cos(theta);
-    const y = radius * Math.sin(phi) * Math.sin(theta);
-    const z = radius * Math.cos(phi);
+    // Ensure the stars spawn outside the restricted Z range (75 ± 40)
+    do {
+      radius = 30 + Math.random() * 150; // Spread stars further out
+      theta = Math.random() * Math.PI * 2;
+      phi = Math.random() * Math.PI;
+      
+      x = radius * Math.sin(phi) * Math.cos(theta);
+      y = radius * Math.sin(phi) * Math.sin(theta);
+      z = radius * Math.cos(phi);
+      
+    } while (z >= zMin && z <= zMax); // Check if z is in the restricted range and reposition if necessary
     
     dummy.position.set(x, y, z);
     
@@ -956,16 +1064,16 @@ function createStarField() {
   instancedMesh.instanceColor = new THREE.InstancedBufferAttribute(new Float32Array(starCount * 3), 3);
   instancedMesh.geometry.setAttribute('instanceColor', instancedMesh.instanceColor);
   
-  
   // Make stars persistent by adding to the scene directly
   scene.add(instancedMesh);
   
   return { mesh: instancedMesh, properties: starProperties, colors: colors };
 }
 
-createStarField()
+createStarField();
 // Create stars (this should remain where it is)
 const { mesh: stars, positions } = createStarField();
+
 // Create a new animation function to handle the twinkling and color changes
 function animateStars(stars, time) {
   const { mesh, properties, colors } = stars;
@@ -1128,13 +1236,31 @@ const sections = document.querySelectorAll('.section');
 
 // Lock scroll function
 function preventScroll(e) {
-  if (isScrolling) {
+  if (isScrolling && e.cancelable) {
     e.preventDefault();
     e.stopPropagation();
     return false;
   }
 }
+function setupProjectsAutoSnap() {
+  const projectsSection = document.getElementById('projects');
+  if (!projectsSection) return;
 
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      // If even a small part of projects is visible and not already active
+      if (entry.isIntersecting && currentSectionIndex !== 2 && entry.intersectionRatio > 0.1) {
+        goToSection(2); // Index of the projects section
+      }
+    });
+  }, {
+    threshold: [0.4] // Trigger when 40% visible
+  });
+
+  observer.observe(projectsSection);
+}
+
+setupProjectsAutoSnap()
 let lastScrollTime = 0;
 const scrollCooldown = 1000; // Cooldown between scroll events
 
@@ -1168,6 +1294,24 @@ function setupProjectScrollHandler() {
 const sectionsContainer = document.querySelector('.sections');
 sectionsContainer.addEventListener('wheel', preventScroll, { passive: false });
 sectionsContainer.addEventListener('touchmove', preventScroll, { passive: false });
+document.addEventListener('wheel', (event) => {
+  if (isInsideProjectsAndScrollable()) {
+    return; // Allow normal scrolling inside project section
+  }
+  
+  if (!isScrolling) {
+    event.preventDefault();
+    if (event.deltaY > 0) {
+      goToSection(currentSectionIndex + 1);
+    } else {
+      goToSection(currentSectionIndex - 1);
+    }
+  }
+}, { passive: false });
+
+// Make sure touch events are set on document level too
+document.addEventListener('touchstart', handleTouchStart, { passive: true });
+document.addEventListener('touchend', handleTouchEnd, { passive: true });
 
 // Handle section changes
 function goToSection(index) {
@@ -1176,9 +1320,14 @@ function goToSection(index) {
   isScrolling = true;
   currentSectionIndex = index;
   
-  // Update UI state
-  document.querySelectorAll('.nav-dot').forEach((dot, i) => {
-    dot.classList.toggle('active', i === index);
+  // Update UI state - now with nav items instead of dots
+  const navItems = document.querySelectorAll('.nav-item');
+  navItems.forEach((item, i) => {
+    if (i === index) {
+      item.classList.add('active');
+    } else {
+      item.classList.remove('active');
+    }
   });
   
   // Scroll to section
@@ -1189,23 +1338,21 @@ function goToSection(index) {
   current_page = sectionId;
 
   if (sectionId === 'projects') {
-    if (sectionId === 'projects') {
-      if (states[sectionId]) {
-        animateState(states[sectionId]);
+    if (states[sectionId]) {
+      animateState(states[sectionId]);
+    }
+
+    setTimeout(() => {
+      const projectsContainer = document.getElementById("projects-2d-container")
+      if (projectsContainer) {
+        projectsContainer.classList.add('visible');
+        setupProjectScrollHandler();
+
+        setTimeout(() => {
+          document.getElementById('bg').style.opacity = '0';
+        }, 800);
       }
-  
-      setTimeout(() => {
-        const projectsContainer = document.getElementById("projects-2d-container")
-        if (projectsContainer) {
-          projectsContainer.classList.add('visible');
-          setupProjectScrollHandler(); // 👈 Enable scroll detection inside project view
-  
-          setTimeout(() => {
-            document.getElementById('bg').style.opacity = '0';
-          }, 800);
-        }
-      }, 1000);
-    } 
+    }, 1000);
   } 
   // If coming from projects section to another section
   else if (document.getElementById('projects-2d-container').classList.contains('visible')) {
@@ -1264,7 +1411,8 @@ function applyDonutIdleAnimation(sectionId) {
         donut.rotation.x += baseSpeed * 0.8;
         donut.rotation.z += baseSpeed * 0.3;
         donut.position.x = Math.sin(time * 1.2) * baseAmplitude;
-        scene.background = new THREE.Color(0x040428);
+        //scene.background = new THREE.Color(0x040428);
+        scene.background = new THREE.Color(0x020217)
         if (donutclicked) {
           donutMaterial.color = new THREE.Color(0xb57600);
           donutMaterial.transmission = 0;
@@ -1273,7 +1421,6 @@ function applyDonutIdleAnimation(sectionId) {
           donutMaterial.metalness = 0.2;
           donutMaterial.roughness = 0.3;
         } else {
-          console.log("UNCLICK");
           donutMaterial.color = new THREE.Color(0x002f9b);
           donutMaterial.transmission = 0.85;
           donutMaterial.thickness = 3;
@@ -1304,66 +1451,107 @@ function applyDonutIdleAnimation(sectionId) {
   
   idleAnimation();
 }
-
-// Create navigation dots
-function createNavDots() {
+function createNavMenu() {
+  // Create navigation container
   const navContainer = document.createElement('div');
-  navContainer.className = 'nav-dots';
+  navContainer.className = 'nav-menu';
   
-  sections.forEach((_, index) => {
-    const dot = document.createElement('div');
-    dot.className = 'nav-dot';
-    if (index === 0) dot.classList.add('active');
+  // Navigation items with their text labels
+  const navItems = [
+    { id: 'home', label: 'Welcome' },
+    { id: 'about', label: 'About' },
+    { id: 'projects', label: 'Projects' }
+  ];
+  
+  navItems.forEach((item, index) => {
+    const navItem = document.createElement('div');
+    navItem.className = 'nav-item';
+    navItem.textContent = item.label;
+    navItem.dataset.section = item.id;
     
-    dot.addEventListener('click', () => {
+    if (index === 0) navItem.classList.add('active');
+    
+    navItem.addEventListener('click', () => {
       if (!isScrolling) {
         goToSection(index);
       }
     });
     
-    navContainer.appendChild(dot);
+    navContainer.appendChild(navItem);
   });
   
   document.body.appendChild(navContainer);
-}
-
-// Set up intersection observer for each section
-const observer = new IntersectionObserver((entries) => {
-  entries.forEach(entry => {
-    if (entry.isIntersecting && !isScrolling) {
-      const id = entry.target.id;
-      const index = Array.from(sections).findIndex(section => section.id === id);
+  
+  // Add styles to the document
+  const styleTag = document.createElement('style');
+  styleTag.innerHTML = `
+    .nav-menu {
+      position: fixed;
+      top: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      gap: 30px;
+      z-index: 1000;
+      background-color: rgba(0, 0, 0, 0.5);
+      padding: 10px 20px;
+      border-radius: 20px;
+      backdrop-filter: blur(5px);
+    }
+    
+    .nav-item {
+      color: rgba(255, 255, 255, 0.7);
+      font-size: 16px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      position: relative;
+      padding: 5px 0;
+    }
+    
+    .nav-item:hover {
+      color: white;
+    }
+    
+    .nav-item:hover::after {
+      width: 100%;
+    }
+    
+    .nav-item::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      width: 0;
+      height: 2px;
+      background-color: white;
+      transition: width 0.3s ease;
+    }
+    
+    .nav-item.active {
+      color: white;
+      font-weight: bold;
+    }
+    
+    .nav-item.active::after {
+      width: 100%;
+    }
+    
+    @media (max-width: 768px) {
+      .nav-menu {
+        gap: 15px;
+        padding: 8px 15px;
+        top: 60px;
+      }
       
-      if (index !== currentSectionIndex) {
-        currentSectionIndex = index;
-        
-        // Update nav dots
-        document.querySelectorAll('.nav-dot').forEach((dot, i) => {
-          dot.classList.toggle('active', i === index);
-        });
-        
-        // Start animation
-        isScrolling = true;
-        if (states[id]) {
-          animateState(states[id]);
-        }
-        
-        // Apply section-specific idle animation
-        applyDonutIdleAnimation(id);
-        
-        // Release scroll lock after delay
-        setTimeout(() => {
-          isScrolling = false;
-        }, scrollDelay);
+      .nav-item {
+        font-size: 14px;
       }
     }
-  });
-}, { threshold: 0.5 });
+  `;
+  
+  document.head.appendChild(styleTag);
+}
 
-// Observe each section element
-sections.forEach(section => {
-  observer.observe(section);
-});
 
 // Initialize keyboard navigation
 document.addEventListener('keydown', (event) => {
@@ -1429,7 +1617,7 @@ if (projectsContainer) {
 }
 
 // Update particles in the animation loop
-function animateParticles() {
+function animateParticlesStar() {
   particlesMesh.rotation.x += 0.0005;
   particlesMesh.rotation.y += 0.0003;
 }
@@ -1504,6 +1692,204 @@ const jsTexture = textureLoader.load('JS.png'); // Transparent PNG with JS logo
 function createCustomPlanets() {
   const planets = [];
 
+  // Define a helper function to create both a planet and its point cloud
+  function createPlanetWithPointCloud(planetData) {
+    // Create the planet geometry based on type
+    let planetGeometry;
+    if (planetData.useBox) {
+      planetGeometry = new THREE.BoxGeometry(planetData.size, planetData.size, planetData.size);
+    } else {
+      planetGeometry = new THREE.SphereGeometry(planetData.size / 2, 32, 32);
+    }
+
+    // Create the main planet material
+    const planetMaterial = planetData.texture
+      ? new THREE.MeshBasicMaterial({
+          map: planetData.texture,
+          transparent: true,
+          side: THREE.DoubleSide,
+        })
+      : new THREE.MeshPhysicalMaterial({
+          color: planetData.color || 0xffffff,
+          roughness: 0.4,
+          metalness: 0.7,
+          side: THREE.DoubleSide,
+        });
+
+    // Create planet mesh
+    const planet = new THREE.Mesh(planetGeometry, planetMaterial);
+
+    // Create outline for the planet
+    const outlineGeometry = planetData.useBox 
+      ? new THREE.BoxGeometry(planetData.size * 1.1, planetData.size * 1.1, planetData.size * 1.1) 
+      : new THREE.SphereGeometry(planetData.size / 2 * 1.1, 32, 32);
+    
+    const outlineMaterial = new THREE.MeshBasicMaterial({
+      color: 0xffffff,
+      side: THREE.BackSide,
+      transparent: true,
+      opacity: 0,
+    });
+    
+    const outlineMesh = new THREE.Mesh(outlineGeometry, outlineMaterial);
+    planet.add(outlineMesh);
+    planet.userData.outlineMesh = outlineMesh;
+    
+    // Store all the data in userData
+    planet.userData = { ...planet.userData, ...planetData };
+
+    // Create point cloud version of the planet
+    // We'll create more points for better visualization
+    const pointGeometry = new THREE.BufferGeometry();
+    
+    // Create many points for the cloud
+    const particleCount = 1000;
+    const positions = [];
+    
+    if (planetData.useBox) {
+      // For box shape, create random positions within the box bounds
+      const halfSize = planetData.size / 2;
+      for (let i = 0; i < particleCount; i++) {
+        // Start with points in a sphere for the initial state
+        const theta = Math.random() * Math.PI * 2;
+        const phi = Math.acos((Math.random() * 2) - 1);
+        const radius = planetData.size / 2 * Math.cbrt(Math.random()); // Cube root for uniform distribution
+        
+        positions.push(
+          radius * Math.sin(phi) * Math.cos(theta),
+          radius * Math.sin(phi) * Math.sin(theta),
+          radius * Math.cos(phi)
+        );
+      }
+    } else {
+      // For sphere shape, create random positions within the sphere
+      for (let i = 0; i < particleCount; i++) {
+        const theta = Math.random() * Math.PI * 2;
+        const phi = Math.acos((Math.random() * 2) - 1);
+        const radius = planetData.size / 2 * Math.cbrt(Math.random()); // Cube root for uniform distribution
+        
+        positions.push(
+          radius * Math.sin(phi) * Math.cos(theta),
+          radius * Math.sin(phi) * Math.sin(theta),
+          radius * Math.cos(phi)
+        );
+      }
+    }
+    
+    // Create target positions (where particles will move when morphing)
+    const targetPositions = [];
+    
+    if (planetData.useBox) {
+      // For box target shape
+      for (let i = 0; i < particleCount; i++) {
+        const halfSize = planetData.size / 2;
+        
+        // Determine which face of the cube this point will be on
+        const face = Math.floor(Math.random() * 6);
+        let x, y, z;
+        
+        switch (face) {
+          case 0: // +X face
+            x = halfSize;
+            y = (Math.random() * 2 - 1) * halfSize;
+            z = (Math.random() * 2 - 1) * halfSize;
+            break;
+          case 1: // -X face
+            x = -halfSize;
+            y = (Math.random() * 2 - 1) * halfSize;
+            z = (Math.random() * 2 - 1) * halfSize;
+            break;
+          case 2: // +Y face
+            x = (Math.random() * 2 - 1) * halfSize;
+            y = halfSize;
+            z = (Math.random() * 2 - 1) * halfSize;
+            break;
+          case 3: // -Y face
+            x = (Math.random() * 2 - 1) * halfSize;
+            y = -halfSize;
+            z = (Math.random() * 2 - 1) * halfSize;
+            break;
+          case 4: // +Z face
+            x = (Math.random() * 2 - 1) * halfSize;
+            y = (Math.random() * 2 - 1) * halfSize;
+            z = halfSize;
+            break;
+          case 5: // -Z face
+            x = (Math.random() * 2 - 1) * halfSize;
+            y = (Math.random() * 2 - 1) * halfSize;
+            z = -halfSize;
+            break;
+        }
+        
+        targetPositions.push(x, y, z);
+      }
+    } else {
+      // For sphere target shape
+      for (let i = 0; i < particleCount; i++) {
+        const theta = Math.random() * Math.PI * 2;
+        const phi = Math.acos((Math.random() * 2) - 1);
+        const radius = planetData.size / 2; // Fixed radius for the sphere surface
+        
+        targetPositions.push(
+          radius * Math.sin(phi) * Math.cos(theta),
+          radius * Math.sin(phi) * Math.sin(theta),
+          radius * Math.cos(phi)
+        );
+      }
+    }
+    
+    // Store positions and target positions in the geometry
+    pointGeometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+    
+    // Choose point material color based on planet color or a default
+    const pointColor = planetData.color || (planetData.texture ? 0xffff00 : 0x00ffff);
+    const pointMaterial = new THREE.PointsMaterial({
+      color: pointColor,
+      size: 0.15,
+      transparent: true,
+      opacity: 0.8,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false,
+    });
+    
+    const pointCloud = new THREE.Points(pointGeometry, pointMaterial);
+    
+    // Store original and target positions in userData for animation
+    pointCloud.userData.originalPositions = [...positions];
+    pointCloud.userData.targetPositions = targetPositions;
+    pointCloud.userData.currentState = 'sphere'; // Start as sphere
+    pointCloud.userData.animating = false;
+    
+    // Create a pivot to rotate the planet/point cloud around the center
+    const pivot = new THREE.Object3D();
+    planetScene.add(pivot);
+    
+    // Offset planet position (on orbit radius)
+    const angle = planetData.orbitPhase || 0;
+    const x = Math.cos(angle) * planetData.orbitRadius;
+    const z = Math.sin(angle) * planetData.orbitRadius;
+    
+    // Set initial position
+    planet.position.set(x, 0, z);
+    pointCloud.position.set(x, 0, z);
+    
+    // Add both to pivot
+    pivot.add(planet);
+    pivot.add(pointCloud);
+    
+    // Set initial visibility
+    planet.visible = false; // Start with solid planet hidden
+    pointCloud.visible = true; // Start with point cloud visible
+    
+    // Store cross-references
+    planet.userData.pointCloud = pointCloud;
+    planet.userData.pivot = pivot;
+    pointCloud.userData.planet = planet;
+    pointCloud.userData.pivot = pivot;
+    
+    return planet;
+  }
+
   // JS Planet
   const jsPlanetData = {
     name: "JS",
@@ -1513,35 +1899,11 @@ function createCustomPlanets() {
     orbitSpeed: 0.09,
     orbitPhase: 0,
     orbitTilt: 0.1,
-    info: "2 Years of Javascript Working Experience"
+    info: "2 Years of Javascript Working Experience",
+    useBox: true
   };
-
-  const jsPlanetGeometry = new THREE.BoxGeometry(jsPlanetData.size, jsPlanetData.size, jsPlanetData.size);
-  const jsPlanetMaterial = jsPlanetData.texture
-    ? new THREE.MeshBasicMaterial({
-        map: jsPlanetData.texture,
-        transparent: true,
-        side: THREE.DoubleSide,
-      })
-    : new THREE.MeshPhysicalMaterial({
-        roughness: 0.4,
-        metalness: 0.7,
-        side: THREE.DoubleSide,
-      });
-  const jsPlanet = new THREE.Mesh(jsPlanetGeometry, jsPlanetMaterial);
-
-  const jsOutlineGeometry = new THREE.BoxGeometry(jsPlanetData.size * 1.1, jsPlanetData.size * 1.1, jsPlanetData.size * 1.1);
-  const jsOutlineMaterial = new THREE.MeshBasicMaterial({
-    color: 0xffffff,
-    side: THREE.BackSide,
-    transparent: true,
-    opacity: 0,
-  });
-  const jsOutlineMesh = new THREE.Mesh(jsOutlineGeometry, jsOutlineMaterial);
-  jsPlanet.add(jsOutlineMesh);
-  jsPlanet.userData.outlineMesh = jsOutlineMesh;
-  jsPlanet.userData = { ...jsPlanet.userData, ...jsPlanetData };
-  planetScene.add(jsPlanet);
+  
+  const jsPlanet = createPlanetWithPointCloud(jsPlanetData);
   planets.push(jsPlanet);
 
   // Zephyria Planet
@@ -1553,30 +1915,11 @@ function createCustomPlanets() {
     orbitSpeed: 0.13,
     orbitPhase: Math.PI / 3,
     orbitTilt: 0.2,
-    info: "Farmer!!!!!"
+    info: "Farmer!!!!!",
+    useBox: true
   };
-
-  const zephyriaPlanetGeometry = new THREE.BoxGeometry(zephyriaPlanetData.size, zephyriaPlanetData.size, zephyriaPlanetData.size);
-  const zephyriaPlanetMaterial = new THREE.MeshPhysicalMaterial({
-    color: zephyriaPlanetData.color,
-    roughness: 0.4,
-    metalness: 0.7,
-    side: THREE.DoubleSide,
-  });
-  const zephyriaPlanet = new THREE.Mesh(zephyriaPlanetGeometry, zephyriaPlanetMaterial);
-
-  const zephyriaOutlineGeometry = new THREE.BoxGeometry(zephyriaPlanetData.size * 1.1, zephyriaPlanetData.size * 1.1, zephyriaPlanetData.size * 1.1);
-  const zephyriaOutlineMaterial = new THREE.MeshBasicMaterial({
-    color: 0xffffff,
-    side: THREE.BackSide,
-    transparent: true,
-    opacity: 0,
-  });
-  const zephyriaOutlineMesh = new THREE.Mesh(zephyriaOutlineGeometry, zephyriaOutlineMaterial);
-  zephyriaPlanet.add(zephyriaOutlineMesh);
-  zephyriaPlanet.userData.outlineMesh = zephyriaOutlineMesh;
-  zephyriaPlanet.userData = { ...zephyriaPlanet.userData, ...zephyriaPlanetData };
-  planetScene.add(zephyriaPlanet);
+  
+  const zephyriaPlanet = createPlanetWithPointCloud(zephyriaPlanetData);
   planets.push(zephyriaPlanet);
 
   // Verdantia Planet
@@ -1588,30 +1931,11 @@ function createCustomPlanets() {
     orbitSpeed: 0.06,
     orbitPhase: Math.PI / 2,
     orbitTilt: 3.15,
-    info: "No clue"
+    info: "No clue",
+    useBox: true
   };
-
-  const verdantiaPlanetGeometry = new THREE.BoxGeometry(verdantiaPlanetData.size, verdantiaPlanetData.size, verdantiaPlanetData.size);
-  const verdantiaPlanetMaterial = new THREE.MeshPhysicalMaterial({
-    color: verdantiaPlanetData.color,
-    roughness: 0.4,
-    metalness: 0.7,
-    side: THREE.DoubleSide,
-  });
-  const verdantiaPlanet = new THREE.Mesh(verdantiaPlanetGeometry, verdantiaPlanetMaterial);
-
-  const verdantiaOutlineGeometry = new THREE.BoxGeometry(verdantiaPlanetData.size * 1.1, verdantiaPlanetData.size * 1.1, verdantiaPlanetData.size * 1.1);
-  const verdantiaOutlineMaterial = new THREE.MeshBasicMaterial({
-    color: 0xffffff,
-    side: THREE.BackSide,
-    transparent: true,
-    opacity: 0,
-  });
-  const verdantiaOutlineMesh = new THREE.Mesh(verdantiaOutlineGeometry, verdantiaOutlineMaterial);
-  verdantiaPlanet.add(verdantiaOutlineMesh);
-  verdantiaPlanet.userData.outlineMesh = verdantiaOutlineMesh;
-  verdantiaPlanet.userData = { ...verdantiaPlanet.userData, ...verdantiaPlanetData };
-  planetScene.add(verdantiaPlanet);
+  
+  const verdantiaPlanet = createPlanetWithPointCloud(verdantiaPlanetData);
   planets.push(verdantiaPlanet);
 
   // Nautilus Planet
@@ -1623,30 +1947,11 @@ function createCustomPlanets() {
     orbitSpeed: 0.03,
     orbitPhase: Math.PI,
     orbitTilt: 0.3,
-    info: "No clue"
+    info: "No clue",
+    useBox: true
   };
-
-  const nautilusPlanetGeometry = new THREE.BoxGeometry(nautilusPlanetData.size, nautilusPlanetData.size, nautilusPlanetData.size);
-  const nautilusPlanetMaterial = new THREE.MeshPhysicalMaterial({
-    color: nautilusPlanetData.color,
-    roughness: 0.4,
-    metalness: 0.7,
-    side: THREE.DoubleSide,
-  });
-  const nautilusPlanet = new THREE.Mesh(nautilusPlanetGeometry, nautilusPlanetMaterial);
-
-  const nautilusOutlineGeometry = new THREE.BoxGeometry(nautilusPlanetData.size * 1.1, nautilusPlanetData.size * 1.1, nautilusPlanetData.size * 1.1);
-  const nautilusOutlineMaterial = new THREE.MeshBasicMaterial({
-    color: 0xffffff,
-    side: THREE.BackSide,
-    transparent: true,
-    opacity: 0,
-  });
-  const nautilusOutlineMesh = new THREE.Mesh(nautilusOutlineGeometry, nautilusOutlineMaterial);
-  nautilusPlanet.add(nautilusOutlineMesh);
-  nautilusPlanet.userData.outlineMesh = nautilusOutlineMesh;
-  nautilusPlanet.userData = { ...nautilusPlanet.userData, ...nautilusPlanetData };
-  planetScene.add(nautilusPlanet);
+  
+  const nautilusPlanet = createPlanetWithPointCloud(nautilusPlanetData);
   planets.push(nautilusPlanet);
 
   // Mystara Planet
@@ -1658,30 +1963,11 @@ function createCustomPlanets() {
     orbitSpeed: 0.11,
     orbitPhase: Math.PI * 1.5,
     orbitTilt: 0.25,
-    info: "No clue"
+    info: "No clue",
+    useBox: true
   };
-
-  const mystaraPlanetGeometry = new THREE.BoxGeometry(mystaraPlanetData.size, mystaraPlanetData.size, mystaraPlanetData.size);
-  const mystaraPlanetMaterial = new THREE.MeshPhysicalMaterial({
-    color: mystaraPlanetData.color,
-    roughness: 0.4,
-    metalness: 0.7,
-    side: THREE.DoubleSide,
-  });
-  const mystaraPlanet = new THREE.Mesh(mystaraPlanetGeometry, mystaraPlanetMaterial);
-
-  const mystaraOutlineGeometry = new THREE.BoxGeometry(mystaraPlanetData.size * 1.1, mystaraPlanetData.size * 1.1, mystaraPlanetData.size * 1.1);
-  const mystaraOutlineMaterial = new THREE.MeshBasicMaterial({
-    color: 0xffffff,
-    side: THREE.BackSide,
-    transparent: true,
-    opacity: 0,
-  });
-  const mystaraOutlineMesh = new THREE.Mesh(mystaraOutlineGeometry, mystaraOutlineMaterial);
-  mystaraPlanet.add(mystaraOutlineMesh);
-  mystaraPlanet.userData.outlineMesh = mystaraOutlineMesh;
-  mystaraPlanet.userData = { ...mystaraPlanet.userData, ...mystaraPlanetData };
-  planetScene.add(mystaraPlanet);
+  
+  const mystaraPlanet = createPlanetWithPointCloud(mystaraPlanetData);
   planets.push(mystaraPlanet);
 
   return planets;
@@ -1689,6 +1975,196 @@ function createCustomPlanets() {
 
 // Create the planets
 const orbitalPlanets = createCustomPlanets();
+
+function animatePointCloudMorph(pointCloud, targetState, duration = 1.5) {
+  // Don't animate if already animating
+  if (pointCloud.userData.animating) return;
+  pointCloud.userData.animating = true;
+  
+  const positions = pointCloud.geometry.attributes.position.array;
+  const originalPositions = pointCloud.userData.originalPositions;
+  const targetPositions = pointCloud.userData.targetPositions;
+  
+  // Determine start and end positions based on current state and target state
+  const startPositions = [...positions];
+  const endPositions = targetState === 'shape' ? targetPositions : originalPositions;
+  
+  // Generate random explosion vectors for particle dispersion effect
+  const explosionVectors = [];
+  for (let i = 0; i < positions.length; i += 3) {
+    // Random direction vector with some magnitude
+    const magnitude = Math.random() * 2 + 10; // Random magnitude between 2 and 4
+    const theta = Math.random() * Math.PI * 2;
+    const phi = Math.acos((Math.random() * 2) - 1);
+    
+    explosionVectors.push(
+      magnitude * Math.sin(phi) * Math.cos(theta),
+      magnitude * Math.sin(phi) * Math.sin(theta),
+      magnitude * Math.cos(phi)
+    );
+  }
+  
+  // Animation timeline
+  const timeline = gsap.timeline({
+    onComplete: () => {
+      pointCloud.userData.currentState = targetState;
+      pointCloud.userData.animating = false;
+      
+      // Show or hide the solid planet at the end of animation
+      if (pointCloud.userData.planet) {
+        pointCloud.userData.planet.visible = targetState === 'shape';
+        
+        // If showing the solid planet, fade in for smooth transition
+        if (targetState === 'shape') {
+          gsap.fromTo(pointCloud.material, 
+            { opacity: 0.8 }, 
+            { opacity: 0, duration: 0.5 }
+          );
+        } else {
+          gsap.fromTo(pointCloud.material, 
+            { opacity: 0 }, 
+            { opacity: 0.8, duration: 0.5 }
+          );
+        }
+      }
+    }
+  });
+  
+  // Phase 1: Explosion effect - particles fly outward
+  timeline.to({}, {
+    duration: duration * 0.3,
+    onUpdate: function() {
+      const progress = this.progress();
+      
+      // Calculate intermediate positions between start and exploded
+      for (let i = 0; i < positions.length; i += 3) {
+        const explosionX = startPositions[i] + explosionVectors[i] * progress;
+        const explosionY = startPositions[i+1] + explosionVectors[i+1] * progress;
+        const explosionZ = startPositions[i+2] + explosionVectors[i+2] * progress;
+        
+        positions[i] = explosionX;
+        positions[i+1] = explosionY;
+        positions[i+2] = explosionZ;
+      }
+      
+      pointCloud.geometry.attributes.position.needsUpdate = true;
+    }
+  });
+  
+  // Phase 2: Implosion to target shape
+  timeline.to({}, {
+    duration: duration * 0.7,
+    onUpdate: function() {
+      const progress = this.progress();
+      
+      // Calculate intermediate positions between exploded and target positions
+      for (let i = 0; i < positions.length; i += 3) {
+        const explosionX = startPositions[i] + explosionVectors[i] * (1 - progress);
+        const explosionY = startPositions[i+1] + explosionVectors[i+1] * (1 - progress);
+        const explosionZ = startPositions[i+2] + explosionVectors[i+2] * (1 - progress);
+        
+        positions[i] = explosionX + (endPositions[i] - explosionX) * progress;
+        positions[i+1] = explosionY + (endPositions[i+1] - explosionY) * progress;
+        positions[i+2] = explosionZ + (endPositions[i+2] - explosionZ) * progress;
+      }
+      
+      pointCloud.geometry.attributes.position.needsUpdate = true;
+    }
+  });
+  
+  // Add some particle size animation
+  timeline.to(pointCloud.material, {
+    size: targetState === 'shape' ? 0.25 : 0.15,
+    duration: duration,
+    ease: "power2.inOut"
+  }, 0);
+  
+  return timeline;
+}
+function togglePlanetView(planet) {
+  if (!planet || !planet.userData.pointCloud) return;
+  
+  const pointCloud = planet.userData.pointCloud;
+  const currentState = pointCloud.userData.currentState;
+  const targetState = currentState === 'sphere' ? 'shape' : 'sphere';
+
+  const planetIndex = orbitalPlanets.indexOf(planet);
+  const boxSelector = `.sci-fi-text-box[data-id="${planetIndex}"]`;
+
+  // Sync text box visibility with point cloud state
+  if (targetState === 'shape') {
+    // Show text box
+    const textBox = createSciFiTextBox("", {
+      x: planet.position.x,
+      y: planet.position.y,
+      z: planet.position.z,
+      objectIndex: planetIndex
+    }, false);
+
+    const fullText = `${planet.userData.name}: ${planet.userData.info}`;
+    enhancedScrambleEffect(textBox, fullText);
+    planet.userData.isShowingInfo = true;
+  } else {
+    // Hide text box
+    const textBox = document.querySelector(boxSelector);
+    if (textBox) {
+      textBox.classList.remove('active');
+      setTimeout(() => textBox.remove(), 500);
+    }
+    planet.userData.isShowingInfo = false;
+  }
+
+  animatePointCloudMorph(pointCloud, targetState);
+  pointCloud.userData.currentState = targetState;
+}
+
+function debugSyncPlanetTextBoxes() {
+  orbitalPlanets.forEach((planet, index) => {
+    if (!planet || !planet.userData || !planet.userData.pointCloud) return;
+
+    const pointCloud = planet.userData.pointCloud;
+    const state = pointCloud.userData.currentState;
+    const allBoxes = Array.from(document.querySelectorAll(`.sci-fi-text-box[data-id="${index}"]`));
+
+    const shouldHaveTextBox = state === 'shape';
+
+    if (allBoxes.length > 1) {
+      // If there are duplicates, remove all of them
+      allBoxes.forEach(box => {
+        box.classList.remove('active');
+        setTimeout(() => box.remove(), 200);
+      });
+    }
+
+    const hasTextBox = allBoxes.length === 1;
+
+    if (shouldHaveTextBox && !hasTextBox) {
+      // Create missing text box
+      const fullText = `${planet.userData.name}: ${planet.userData.info}`;
+      const newBox = createSciFiTextBox("", {
+        x: planet.position.x,
+        y: planet.position.y,
+        z: planet.position.z,
+        objectIndex: index
+      }, false);
+      enhancedScrambleEffect(newBox, fullText);
+      planet.userData.isShowingInfo = true;
+    }
+
+    if (!shouldHaveTextBox && hasTextBox) {
+      // Remove outdated text box
+      allBoxes[0].classList.remove('active');
+      setTimeout(() => allBoxes[0].remove(), 200);
+      planet.userData.isShowingInfo = false;
+    }
+  });
+
+  // Schedule the next check
+  setTimeout(debugSyncPlanetTextBoxes, 1000);
+}
+
+// Kick off the loop
+debugSyncPlanetTextBoxes();
 
 
 
@@ -1728,22 +2204,15 @@ function updateTextBoxPositions() {
         object = orbitalPlanets[planetIndex];
       }
     }
-    
     // If we found the associated object, update the text box position
     if (object) {
-      // Convert 3D position to screen coordinates
-      const position = new THREE.Vector3(
-        object.position.x,
-        object.position.y,
-        object.position.z
-      );
-      
-      // Project 3D position to 2D screen coordinates
+      const position = new THREE.Vector3();
+      object.getWorldPosition(position); // ⬅️ THIS LINE IS KEY
       position.project(camera);
       
-      // Convert to CSS coordinates
       const x = (position.x * 0.5 + 0.5) * window.innerWidth;
       const y = (-(position.y * 0.5) + 0.5) * window.innerHeight;
+      
       
       // Set text box position with slight offset to avoid covering the object
       // Offset more depending on if it's a donut or planet
@@ -1764,6 +2233,7 @@ function updateTextBoxPositions() {
       // Adjust opacity based on distance for subtle depth effect
       textBox.style.opacity = Math.max(0.7, Math.min(1, scale));
     }
+
   });
 }
 
@@ -1774,7 +2244,7 @@ function createSciFiTextBox(text, position, isDonut) {
   textBox.className = 'sci-fi-text-box';
   textBox.setAttribute('data-id', isDonut ? 'donut' : position.objectIndex);
   
-  // Create the text box content
+  // Create the text box content - remove the close button div from here
   textBox.innerHTML = `
     <div class="sci-fi-text-box-content">
       <div class="sci-fi-text-box-header"></div>
@@ -1782,6 +2252,9 @@ function createSciFiTextBox(text, position, isDonut) {
       <div class="sci-fi-text-box-footer"></div>
     </div>
   `;
+  
+  // Get the content div to append the button to
+  const contentDiv = textBox.querySelector('.sci-fi-text-box-content');
   
   // Add close button
   const closeButton = document.createElement('button');
@@ -1801,7 +2274,8 @@ function createSciFiTextBox(text, position, isDonut) {
     }
   });
   
-  textBox.querySelector('.sci-fi-text-box-content').appendChild(closeButton);
+  // Add the button to the content div
+  contentDiv.appendChild(closeButton);
   
   // Add to DOM
   document.body.appendChild(textBox);
@@ -2300,96 +2774,124 @@ function enhancedScrambleEffect(container, fullText) {
 
 
 function onMouseClick(event) {
+  // Calculate normalized mouse coordinates
   const rect = renderer.domElement.getBoundingClientRect();
   mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
   mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
 
   raycaster.setFromCamera(mouse, camera);
 
-  const clickableObjects = [donut, ...orbitalPlanets].filter(obj => obj !== undefined);
+  // Create a list of all clickable objects - include both solid planets and point clouds
+  const clickableObjects = [donut];
+
+  orbitalPlanets.forEach(planet => {
+    if (planet) {
+      clickableObjects.push(planet);
+      if (planet.userData.pointCloud) {
+        clickableObjects.push(planet.userData.pointCloud);
+      }
+    }
+  });
+
   const intersects = raycaster.intersectObjects(clickableObjects);
 
   if (intersects.length > 0) {
     const clickedObject = intersects[0].object;
 
-    if (clickedObject.userData?.clickable) {
-      const isDonut = clickedObject === donut;
+    let targetObject = null;
+    let isDonut = false;
 
-      // 🚨 Mobile-specific: remove all current text boxes before doing anything else
+    if (clickedObject === donut) {
+      targetObject = donut;
+      isDonut = true;
+    } else if (clickedObject.type === 'Points') {
+      targetObject = clickedObject.userData.planet;
+    } else {
+      targetObject = clickedObject;
+    }
+
+    if (targetObject && targetObject.userData && targetObject.userData.clickable) {
+      // Handle mobile-specific behavior
       if (/Mobi|Android/i.test(navigator.userAgent)) {
-        document.querySelectorAll('.sci-fi-text-box').forEach(box => {
-          box.classList.remove('active');
-          setTimeout(() => box.remove(), 200);
+        // Remove text boxes from other planets if a new one is clicked
+        orbitalPlanets.forEach(planet => {
+          if (planet.userData && planet.userData.pointCloud && planet !== targetObject) {
+            const planetTextBox = document.querySelector(`.sci-fi-text-box[data-id="${planet.userData.index}"]`);
+            if (planetTextBox) {
+              planetTextBox.classList.remove('active');
+              setTimeout(() => planetTextBox.remove(), 200);
+              planet.userData.isShowingInfo = false;
+            }
+            // Switch other planets back to 'sphere' state
+            const pointCloud = planet.userData.pointCloud;
+            if (pointCloud.userData.currentState === 'shape') {
+              animatePointCloudMorph(pointCloud, 'sphere');
+              pointCloud.userData.currentState = 'sphere';
+            }
+          }
         });
-
-        // Reset showing state for all clickable objects
-        clickableObjects.forEach(obj => obj.userData.isShowingInfo = false);
       }
 
-      clickedObject.userData.isShowingInfo = !clickedObject.userData.isShowingInfo;
+      // Donut-specific behavior (since it's not handled by togglePlanetView)
+      if (isDonut) {
+        const existingTextBox = document.querySelector(`.sci-fi-text-box[data-id="donut"]`);
+        if (existingTextBox && targetObject.userData.isShowingInfo) {
+          // If the text box is showing, remove it on second click
+          existingTextBox.classList.remove('active');
+          setTimeout(() => existingTextBox.remove(), 200);
+          targetObject.userData.isShowingInfo = false;
+        } else if (!existingTextBox && !targetObject.userData.isShowingInfo) {
+          // If the text box doesn't exist, create it on the first click
+          const fullText = "This is the central donut object of our universe. It represents the core of our system.";
+          const textBox = createSciFiTextBox("", {
+            x: targetObject.position.x,
+            y: targetObject.position.y,
+            z: targetObject.position.z,
+            objectIndex: null
+          }, true);
 
-      if (clickedObject.userData.isShowingInfo) {
-        let fullText = "";
-
-        if (isDonut) {
-          donutclicked = !donutclicked;
-          fullText = "This is the central donut object of our universe. It represents the core of our system.";
-        } else {
-          const planetIndex = orbitalPlanets.indexOf(clickedObject);
-          if (planetIndex !== -1) {
-            const planet = orbitalPlanets[planetIndex];
-            fullText = `${planet.userData.name}: ${planet.userData.info}`;
-          }
+          enhancedScrambleEffect(textBox, fullText);
+          targetObject.userData.isShowingInfo = true;
         }
-
-        const textBox = createSciFiTextBox("", {
-          x: clickedObject.position.x,
-          y: clickedObject.position.y,
-          z: clickedObject.position.z,
-          objectIndex: isDonut ? null : orbitalPlanets.indexOf(clickedObject)
-        }, isDonut);
-
-        enhancedScrambleEffect(textBox, fullText);
-
-        if (!clickedObject.userData.originalScale) {
-          clickedObject.userData.originalScale = {
-            x: clickedObject.scale.x,
-            y: clickedObject.scale.y,
-            z: clickedObject.scale.z
-          };
-        }
-
-        const originalScale = new THREE.Vector3(
-          clickedObject.userData.originalScale.x,
-          clickedObject.userData.originalScale.y,
-          clickedObject.userData.originalScale.z
-        );
-
-        gsap.to(clickedObject.scale, {
-          x: originalScale.x * 1.2,
-          y: originalScale.y * 1.2,
-          z: originalScale.z * 1.2,
-          duration: 0.3,
-          yoyo: true,
-          repeat: 1,
-          onComplete: () => {
-            clickedObject.scale.set(
-              originalScale.x,
-              originalScale.y,
-              originalScale.z
-            );
-          }
-        });
       } else {
-        const textBox = document.querySelector(`.sci-fi-text-box[data-id="${isDonut ? 'donut' : orbitalPlanets.indexOf(clickedObject)}"]`);
-        if (textBox) {
-          textBox.classList.remove('active');
-          setTimeout(() => textBox.remove(), 500);
-        }
+        // Let togglePlanetView handle both morph and text box
+        togglePlanetView(targetObject);
       }
+
+      // Click animation (still here)
+      if (!targetObject.userData.originalScale) {
+        targetObject.userData.originalScale = {
+          x: targetObject.scale.x,
+          y: targetObject.scale.y,
+          z: targetObject.scale.z
+        };
+      }
+
+      const originalScale = new THREE.Vector3(
+        targetObject.userData.originalScale.x,
+        targetObject.userData.originalScale.y,
+        targetObject.userData.originalScale.z
+      );
+
+      gsap.to(targetObject.scale, {
+        x: originalScale.x * 1.2,
+        y: originalScale.y * 1.2,
+        z: originalScale.z * 1.2,
+        duration: 0.3,
+        yoyo: true,
+        repeat: 1,
+        onComplete: () => {
+          targetObject.scale.set(
+            originalScale.x,
+            originalScale.y,
+            originalScale.z
+          );
+        }
+      });
     }
   }
 }
+
 
 
 
@@ -2487,7 +2989,7 @@ function triggerTypewriterEffect() {
   const typeNextChar = () => {
     if (charIndex < fullText.length) {
       // Generate random typing delay (between 50-300ms) for realism
-      const typingSpeed = Math.floor(Math.random() * 200) + 80;
+      const typingSpeed = Math.floor(Math.random() * 50) + 80;
       const randomValue = Math.random();
       
       // Occasionally show scrambling effect before adding next character
@@ -2553,7 +3055,7 @@ function triggerTypewriterEffect() {
   // Start everything with a 3-second delay
   setTimeout(() => {
     setTimeout(typeNextChar, 100); // Start the typewriter effect after 3 seconds
-  }, 2000); // Delay before starting everything (3000ms = 3 seconds)
+  }, 1250); // Delay before starting everything (3000ms = 3 seconds)
   
   // Set up the ScrollTrigger to start the animation
   ScrollTrigger.create({
@@ -2594,14 +3096,46 @@ window.addEventListener('mousemove', (event) => {
   targetCameraX = x * 6;
   targetCameraY = y * 3.6;
 });
-
+function animateParticles(delta) {
+  orbitalPlanets.forEach(planet => {
+    if (planet && planet.userData.pointCloud) {
+      const pointCloud = planet.userData.pointCloud;
+      
+      // Only animate if not currently morphing
+      if (!pointCloud.userData.animating) {
+        // Subtle motion for particles when in sphere state
+        if (pointCloud.userData.currentState === 'sphere' && pointCloud.visible) {
+          const positions = pointCloud.geometry.attributes.position.array;
+          const time = Date.now() * 0.0005;
+          
+          for (let i = 0; i < positions.length; i += 3) {
+            // Get original position
+            const originalX = pointCloud.userData.originalPositions[i];
+            const originalY = pointCloud.userData.originalPositions[i+1];
+            const originalZ = pointCloud.userData.originalPositions[i+2];
+            
+            // Add subtle wave motion
+            positions[i] = originalX + Math.sin(time + i * 0.01) * 0.05;
+            positions[i+1] = originalY + Math.cos(time + i * 0.01) * 0.05;
+            positions[i+2] = originalZ + Math.sin(time + i * 0.02) * 0.05;
+          }
+          
+          pointCloud.geometry.attributes.position.needsUpdate = true;
+        }
+      }
+    }
+  });
+}
 // Add click event listener
 window.addEventListener('click', onMouseClick);
 let idleTime = 0;
 const fogElement = document.body.querySelector('.purple-fog');
-
+const clock = new THREE.Clock();
 
 function animate() {
+  const delta = clock.getDelta();
+  
+  updateComets(delta);
   if (typeof animationFunction === 'function') {
     animationFunction();
   }
@@ -2639,10 +3173,12 @@ function animate() {
 
   updateTextBoxPositions();
 
+  if (typeof animateParticlesStar === 'function') {
+    animateParticlesStar();
+  }
   if (typeof animateParticles === 'function') {
     animateParticles();
   }
-
   enhanceAboutSection();
 
   if (typeof animateLights === 'function') {
@@ -2695,11 +3231,14 @@ function animate() {
 }
 
 function updatePlanetPosition(planet, time) {
-  if (!planet || !planet.userData) return;
+  if (!planet || !planet.userData || !planet.userData.pivot) return;
 
+  // The pivot contains both the solid planet and point cloud
+  const pivot = planet.userData.pivot;
+  
   // Randomize tilt and spin direction only once
-  if (planet.userData.orbitDirection === undefined) {       // Random tilt
-    planet.userData.orbitDirection = Math.random() < 0.5 ? 1 : -1; // 50/50 spin
+  if (planet.userData.orbitDirection === undefined) {
+    planet.userData.orbitDirection = Math.random() < 0.5 ? 1 : -1;
   }
 
   const { orbitRadius, orbitSpeed, orbitPhase, orbitTilt, orbitDirection } = planet.userData;
@@ -2707,14 +3246,25 @@ function updatePlanetPosition(planet, time) {
   // Calculate current angle with direction factor
   const angle = orbitPhase + time * orbitSpeed * orbitDirection;
 
-  // Circular orbit
-  planet.position.x = orbitRadius * Math.sin(angle);
-  planet.position.z = orbitRadius * Math.cos(angle);
-
-  // Tilted orbit
-  planet.position.y = orbitRadius * Math.sin(angle) * orbitTilt;
+  // Apply rotation to the pivot instead of the planet directly
+  pivot.rotation.y = angle;
+  
+  // Apply tilt to the pivot
+  pivot.rotation.x = orbitTilt;
+  
+  // Position the planet along the orbit circle
+  const x = orbitRadius * Math.sin(angle);
+  const z = orbitRadius * Math.cos(angle);
+  
+  // We won't set position on planets anymore since they're children of the pivot
+  // Just update the y position to create the tilt effect if needed
+  const y = orbitRadius * Math.sin(angle) * orbitTilt;
+  
+  // Optional - if you want to modulate the y position for wobble effect
+  pivot.position.x = x;
+  pivot.position.z = z;
+  pivot.position.y = y;
 }
-
 // Function to hide loading screen
 function hideLoading() {
   const loadingScreen = document.getElementById('loading-screen');
@@ -2727,6 +3277,7 @@ function hideLoading() {
 }
 
 // Ensure loading screen is hidden after everything is initialized
+// Replace all instances of createNavDots with createNavMenu
 window.addEventListener('load', () => {
   // Make sure all objects have required properties
   setupInteractiveObjects();
@@ -2734,15 +3285,9 @@ window.addEventListener('load', () => {
   // Hide loading after small delay to ensure Three.js scene is ready
   setTimeout(hideLoading, 1500);
   
-  // Start rendering
-  if (typeof createNavDots === 'function') {
-    createNavDots();
-  }
+  // Go to first section
+  goToSection(0); // Start at the first section
   
-  // Go to first section if the function exists
-  if (typeof goToSection === 'function') {
-    goToSection(0); // Start at the first section
-  }
   console.log(navigator.userAgent);
   // Start animation loop
   animate()
