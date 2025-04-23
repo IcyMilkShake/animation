@@ -1989,22 +1989,27 @@ function animatePointCloudMorph(pointCloud, targetState, duration = 1.5) {
   const startPositions = [...positions];
   const endPositions = targetState === 'shape' ? targetPositions : originalPositions;
   
-  // Generate random explosion vectors for particle dispersion effect
+  // Generate random explosion vectors with varied magnitudes for particle dispersion effect
   const explosionVectors = [];
+  const maxMagnitudes = []; // Store individual max explosion distances
+  
   for (let i = 0; i < positions.length; i += 3) {
-    // Random direction vector with some magnitude
-    const magnitude = Math.random() * 2 + 10; // Random magnitude between 2 and 4
+    // Random max magnitude between 15 and 30 for each particle
+    const maxMagnitude = Math.random() * 15 + 15;
+    maxMagnitudes.push(maxMagnitude);
+    
+    // Random direction vector
     const theta = Math.random() * Math.PI * 2;
     const phi = Math.acos((Math.random() * 2) - 1);
     
     explosionVectors.push(
-      magnitude * Math.sin(phi) * Math.cos(theta),
-      magnitude * Math.sin(phi) * Math.sin(theta),
-      magnitude * Math.cos(phi)
+      Math.sin(phi) * Math.cos(theta),
+      Math.sin(phi) * Math.sin(theta),
+      Math.cos(phi)
     );
   }
   
-  // Animation timeline
+  // Animation timeline with a smoother transition between phases
   const timeline = gsap.timeline({
     onComplete: () => {
       pointCloud.userData.currentState = targetState;
@@ -2030,49 +2035,49 @@ function animatePointCloudMorph(pointCloud, targetState, duration = 1.5) {
     }
   });
   
-  // Phase 1: Explosion effect - particles fly outward
+  // Single combined phase with eased explosion and implosion
   timeline.to({}, {
-    duration: duration * 0.3,
+    duration: duration,
+    ease: "power2.inOut",
     onUpdate: function() {
       const progress = this.progress();
       
-      // Calculate intermediate positions between start and exploded
+      // Custom easing for explosion and implosion phases
+      // Fast initial explosion (0-40% of animation) then gradual transition to implosion
+      const explosionEase = progress < 0.4 ? 
+        // Remap 0-0.4 to 0-1 with an ease-out curve
+        1 - Math.pow(1 - progress / 0.4, 3) : 
+        // Gradually decrease explosion from 1 to 0 as progress goes from 0.4 to 1
+        Math.max(0, 1 - ((progress - 0.4) / 0.6));
+      
+      // Implosion ease starts gradually as explosion fades
+      const implosionEase = progress < 0.3 ? 0 : 
+        // Remap 0.3-1 to 0-1 with an ease-in curve
+        Math.pow((progress - 0.3) / 0.7, 2);
+      
+      // Calculate intermediate positions with overlapping explosion and implosion
       for (let i = 0; i < positions.length; i += 3) {
-        const explosionX = startPositions[i] + explosionVectors[i] * progress;
-        const explosionY = startPositions[i+1] + explosionVectors[i+1] * progress;
-        const explosionZ = startPositions[i+2] + explosionVectors[i+2] * progress;
+        // Explosion vector with individual max magnitude
+        const particleExplosionX = explosionVectors[i] * maxMagnitudes[i/3] * explosionEase;
+        const particleExplosionY = explosionVectors[i+1] * maxMagnitudes[i/3] * explosionEase;
+        const particleExplosionZ = explosionVectors[i+2] * maxMagnitudes[i/3] * explosionEase;
         
-        positions[i] = explosionX;
-        positions[i+1] = explosionY;
-        positions[i+2] = explosionZ;
+        // Start position plus explosion vector
+        const explodedX = startPositions[i] + particleExplosionX;
+        const explodedY = startPositions[i+1] + particleExplosionY;
+        const explodedZ = startPositions[i+2] + particleExplosionZ;
+        
+        // Blend with target position based on implosion ease
+        positions[i] = explodedX * (1 - implosionEase) + endPositions[i] * implosionEase;
+        positions[i+1] = explodedY * (1 - implosionEase) + endPositions[i+1] * implosionEase;
+        positions[i+2] = explodedZ * (1 - implosionEase) + endPositions[i+2] * implosionEase;
       }
       
       pointCloud.geometry.attributes.position.needsUpdate = true;
     }
   });
   
-  // Phase 2: Implosion to target shape
-  timeline.to({}, {
-    duration: duration * 0.7,
-    onUpdate: function() {
-      const progress = this.progress();
-      
-      // Calculate intermediate positions between exploded and target positions
-      for (let i = 0; i < positions.length; i += 3) {
-        const explosionX = startPositions[i] + explosionVectors[i] * (1 - progress);
-        const explosionY = startPositions[i+1] + explosionVectors[i+1] * (1 - progress);
-        const explosionZ = startPositions[i+2] + explosionVectors[i+2] * (1 - progress);
-        
-        positions[i] = explosionX + (endPositions[i] - explosionX) * progress;
-        positions[i+1] = explosionY + (endPositions[i+1] - explosionY) * progress;
-        positions[i+2] = explosionZ + (endPositions[i+2] - explosionZ) * progress;
-      }
-      
-      pointCloud.geometry.attributes.position.needsUpdate = true;
-    }
-  });
-  
-  // Add some particle size animation
+  // Particle size animation
   timeline.to(pointCloud.material, {
     size: targetState === 'shape' ? 0.25 : 0.15,
     duration: duration,
