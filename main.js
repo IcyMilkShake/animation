@@ -983,14 +983,12 @@ function tween(start, end, t, easingFn) {
   return start + (end - start) * easingFn(t);
 }
 
-// Use instanced mesh for better performance
+const textureLoader = new THREE.TextureLoader()
+const starTexture = textureLoader.load('Star.png');
+
 function createStarField() {
-  const starCount = 1750;
-  
-  // Use low-poly geometry for stars
+  const starCount = 1500;
   const geometry = new THREE.SphereGeometry(0.05, 8, 6);
-  
-  // Create a material that can handle color changes
   const starMaterial = new THREE.MeshStandardMaterial({
     emissive: 0xffffff,
     emissiveIntensity: 1,
@@ -998,56 +996,40 @@ function createStarField() {
     roughness: 0.2,
     vertexColors: true,
   });
-  
-  // Create instanced mesh
-  const instancedMesh = new THREE.InstancedMesh(
-    geometry,
-    starMaterial,
-    starCount
-  );
-  
-  // Define star colors
+
+  const instancedMesh = new THREE.InstancedMesh(geometry, starMaterial, starCount);
   const colors = [
-    new THREE.Color(0xff0000), // Red
-    new THREE.Color(0x0000ff), // Blue
-    new THREE.Color(0x831aa5), // Purple
-    new THREE.Color(0xffffff)  // White
+    new THREE.Color(0xff0000),
+    new THREE.Color(0x0000ff),
+    new THREE.Color(0x831aa5),
+    new THREE.Color(0xffffff)
   ];
-  
+
   const dummy = new THREE.Object3D();
-  
-  // Create arrays to store star properties for animation
   const starProperties = [];
-  
-  // Z range where stars should not spawn
-  const zMin = 35; // Prevent stars from spawning closer than 35 to Z = 75
-  const zMax = 75; // Prevent stars from spawning further than 115 from Z = 75
-  
+
   for (let i = 0; i < starCount; i++) {
     let radius, theta, phi, x, y, z;
-    
-    // Ensure the stars spawn outside the restricted Z range (75 ± 40)
+
+    // Only allow stars where z < -10 (in front of camera)
     do {
-      radius = 30 + Math.random() * 150; // Spread stars further out
+      radius = 30 + Math.random() * 150;
       theta = Math.random() * Math.PI * 2;
       phi = Math.random() * Math.PI;
-      
+
       x = radius * Math.sin(phi) * Math.cos(theta);
       y = radius * Math.sin(phi) * Math.sin(theta);
       z = radius * Math.cos(phi);
-      
-    } while (z >= zMin && z <= zMax); // Check if z is in the restricted range and reposition if necessary
-    
+    } while (z >= -10); // in front only
+
     dummy.position.set(x, y, z);
-    
-    // Random initial scale for twinkling effect
+
     const initialScale = 0.5 + Math.random() * 1.5;
     dummy.scale.set(initialScale, initialScale, initialScale);
-    
+
     dummy.updateMatrix();
     instancedMesh.setMatrixAt(i, dummy.matrix);
-    
-    // Store properties for animation
+
     starProperties.push({
       position: { x, y, z },
       originalScale: initialScale,
@@ -1056,21 +1038,66 @@ function createStarField() {
       colorIndex: Math.floor(Math.random() * colors.length),
       colorTransitionSpeed: 0.2 + Math.random() * 0.8
     });
-    
-    // Set initial color
+
     instancedMesh.setColorAt(i, colors[starProperties[i].colorIndex]);
   }
-  
+
   instancedMesh.instanceColor = new THREE.InstancedBufferAttribute(new Float32Array(starCount * 3), 3);
   instancedMesh.geometry.setAttribute('instanceColor', instancedMesh.instanceColor);
-  
-  // Make stars persistent by adding to the scene directly
+
   scene.add(instancedMesh);
-  
   return { mesh: instancedMesh, properties: starProperties, colors: colors };
 }
 
+function createBackStarSprites() {
+  const starCount = 500;
+  const geometry = new THREE.BufferGeometry();
+  const positions = new Float32Array(starCount * 3);
+  const colors = new Float32Array(starCount * 3);
+
+  for (let i = 0; i < starCount; i++) {
+    let x, y, z;
+
+    // Only spawn within z = 90 to z = 250
+    do {
+      let theta = Math.random() * Math.PI * 2;
+      let phi = Math.random() * Math.PI;
+
+      x = radius * Math.sin(phi) * Math.cos(theta);
+      y = radius * Math.sin(phi) * Math.sin(theta);
+      z = 50 + Math.random() * 160; // 90 to 250
+    } while (z < 90 || z > 250);
+
+    positions[i * 3] = x;
+    positions[i * 3 + 1] = y;
+    positions[i * 3 + 2] = z;
+
+    // White to match texture
+    colors[i * 3] = 1;
+    colors[i * 3 + 1] = 1;
+    colors[i * 3 + 2] = 1;
+  }
+
+  geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+  geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+
+  const material = new THREE.PointsMaterial({
+    size: 0.3,
+    map: starTexture,
+    transparent: true,
+    blending: THREE.AdditiveBlending,
+    depthWrite: false,
+    vertexColors: true
+  });
+
+  const points = new THREE.Points(geometry, material);
+  scene.add(points);
+  return points;
+}
+
+// Create front & back star fields
 createStarField();
+createBackStarSprites();
 // Create stars (this should remain where it is)
 const { mesh: stars, positions } = createStarField();
 
@@ -1683,9 +1710,6 @@ document.addEventListener('DOMContentLoaded', function() {
     });
   });
 });
-
-const textureLoader = new THREE.TextureLoader();
-
 // Load all textures you need first
 const jsTexture = textureLoader.load('JS.png'); // Transparent PNG with JS logo
 

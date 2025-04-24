@@ -9,6 +9,7 @@
   },
   "dependencies": {
     "gsap": "^3.12.7",
+    "space-travel": "^1.1.0",
     "three": "^0.174.0"
   },
   "devDependencies": {
