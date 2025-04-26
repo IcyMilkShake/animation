@@ -14,7 +14,9 @@ import {TextPlugin} from 'gsap/TextPlugin';
 gsap.registerPlugin(Draggable);
 gsap.registerPlugin(ScrollTrigger);
 gsap.registerPlugin(TextPlugin);
-
+let lastInteractionTime = 0;
+let lastFrameTime = 0;
+const MAX_DELTA_TIME = 0.1; // Cap the maximum time between frames
 // Initialize time variable globally
 let time = 0;
 let hasExploded = false;
@@ -153,7 +155,7 @@ function createIntroScreen() {
   ];
   
   // Create shapes and position them in a spiral pattern
-  const totalShapes = 120;
+  const totalShapes = 160;
   const spiralRadius = 80;
   
   for (let i = 0; i < totalShapes; i++) {
@@ -246,6 +248,7 @@ function createIntroScreen() {
     // Calculate mouse position in normalized device coordinates
     mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
     mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+    lastInteractionTime = performance.now() /1000
     
     // Update the raycaster
     raycaster.setFromCamera(mouse, camera);
@@ -336,7 +339,7 @@ function animate() {
   // Handle pre-explosion animations
   if (isSpiralingIn && !hasExploded) {
     // Adjust sucking speed to make it faster
-    const suckSpeed = 0.05; // Increase this for faster sucking
+    const suckSpeed = 0.035; // Increase this for faster sucking
     
     // Animate shapes
     shapes.forEach((shape) => {
@@ -365,60 +368,65 @@ function animate() {
     });
     
     // Trigger explosion when all shapes are near center or after a time threshold
+  }else if (hasExploded && !introComplete) {
+    const minExplosionSpeed = 0.4;
+    const speedDecay = 0.99;
+    const additionalForce = 0.01;
+  
+    // Reset explosion if user clicks after a long idle time
+    if (introTime > 20 && isDragging) {  // Add a time threshold
+      // Reset explosion properties for all shapes
+      shapes.forEach(shape => {
+        // Regenerate explosion direction and speed
+        shape.explosionDirection = new THREE.Vector3(
+          (Math.random() - 0.5) * 2,
+          (Math.random() - 0.5) * 2,
+          (Math.random() - 0.5) * 2
+        ).normalize();
+        shape.explosionSpeed = 0.75 + Math.random(); // Reset to initial explosion speed
+        
+        // Optionally bring shapes closer to center before re-exploding
+        shape.mesh.position.set(
+          shape.mesh.position.x * 0.5,
+          shape.mesh.position.y * 0.5,
+          shape.mesh.position.z * 0.5
+        );
+      });
+    }
+  
+    // Animate the exploding shapes
+    shapes.forEach(shape => {
+      if (isDragging && selectedShape === shape.mesh) return;
+  
+      // Rest of your existing explosion code...
+      shape.mesh.position.x += shape.explosionDirection.x * shape.explosionSpeed;
+      shape.mesh.position.y += shape.explosionDirection.y * shape.explosionSpeed;
+      shape.mesh.position.z += shape.explosionDirection.z * shape.explosionSpeed;
+  
+      shape.explosionDirection.y -= 0.01;
+      shape.explosionSpeed = Math.max(shape.explosionSpeed * speedDecay, minExplosionSpeed);
+      shape.explosionSpeed += additionalForce;
+  
+      shape.mesh.rotation.x += shape.rotationSpeed.x * 2;
+      shape.mesh.rotation.y += shape.rotationSpeed.y * 2;
+      shape.mesh.rotation.z += shape.rotationSpeed.z * 2;
+  
+      if (shape.mesh.material.opacity < 0.7) {
+        shape.mesh.material.opacity += 0.02;
+      }
+  
+      if (shape.mesh.scale.x < 1) {
+        const growFactor = 1.02;
+        shape.mesh.scale.x *= growFactor;
+        shape.mesh.scale.y *= growFactor;
+        shape.mesh.scale.z *= growFactor;
+      }
+    });
+  
+    if (introTime > 300) {
+      introComplete = true;
+    }
   }
-  // Handle explosion animation
-  // Inside the explosion animation block
-else if (hasExploded && !introComplete) {
-  const minExplosionSpeed = 0;  // Minimum speed to prevent drying out
-  const speedDecay = 0.99; // Decay rate for speed
-  const additionalForce = 0.002; // Small force to keep the explosion energetic
-
-  // Animate the exploding shapes
-  shapes.forEach(shape => {
-    if (isDragging && selectedShape === shape.mesh) return; // Skip explosion for dragging shapes
-
-    // Move in explosion direction
-    shape.mesh.position.x += shape.explosionDirection.x * shape.explosionSpeed;
-    shape.mesh.position.y += shape.explosionDirection.y * shape.explosionSpeed;
-    shape.mesh.position.z += shape.explosionDirection.z * shape.explosionSpeed;
-
-    // Add some gravity effect
-    shape.explosionDirection.y -= 0.01; // Adjust gravity effect if necessary
-
-    // Slow down over time (but avoid going below minimum speed)
-    shape.explosionSpeed = Math.max(shape.explosionSpeed * speedDecay, minExplosionSpeed);
-
-    if (shape.explosionSpeed < minExplosionSpeed) {
-      shape.explosionSpeed = minExplosionSpeed;
-    }
-    // Optionally, apply additional force to keep explosion energetic
-    shape.explosionSpeed += additionalForce;
-
-    // Rotate during explosion
-    shape.mesh.rotation.x += shape.rotationSpeed.x * 2;
-    shape.mesh.rotation.y += shape.rotationSpeed.y * 2;
-    shape.mesh.rotation.z += shape.rotationSpeed.z * 2;
-
-    // Fade in during explosion
-    if (shape.mesh.material.opacity < 0.7) {
-      shape.mesh.material.opacity += 0.02;
-    }
-
-    // Grow slightly during explosion
-    if (shape.mesh.scale.x < 1) {
-      const growFactor = 1.02;
-      shape.mesh.scale.x *= growFactor;
-      shape.mesh.scale.y *= growFactor;
-      shape.mesh.scale.z *= growFactor;
-    }
-  });
-
-  // Mark intro as complete after all shapes have exploded
-  if (introTime > 8) {
-    introComplete = true;
-  }
-}
-
   // Handle post-explosion state (interactive mode)
   else if (introComplete) {
     // Keep shapes slowly rotating when not being dragged
@@ -1048,56 +1056,8 @@ function createStarField() {
   scene.add(instancedMesh);
   return { mesh: instancedMesh, properties: starProperties, colors: colors };
 }
-
-function createBackStarSprites() {
-  const starCount = 500;
-  const geometry = new THREE.BufferGeometry();
-  const positions = new Float32Array(starCount * 3);
-  const colors = new Float32Array(starCount * 3);
-
-  for (let i = 0; i < starCount; i++) {
-    let x, y, z;
-
-    // Only spawn within z = 90 to z = 250
-    do {
-      let theta = Math.random() * Math.PI * 2;
-      let phi = Math.random() * Math.PI;
-
-      x = radius * Math.sin(phi) * Math.cos(theta);
-      y = radius * Math.sin(phi) * Math.sin(theta);
-      z = 50 + Math.random() * 160; // 90 to 250
-    } while (z < 90 || z > 250);
-
-    positions[i * 3] = x;
-    positions[i * 3 + 1] = y;
-    positions[i * 3 + 2] = z;
-
-    // White to match texture
-    colors[i * 3] = 1;
-    colors[i * 3 + 1] = 1;
-    colors[i * 3 + 2] = 1;
-  }
-
-  geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-  geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
-
-  const material = new THREE.PointsMaterial({
-    size: 0.3,
-    map: starTexture,
-    transparent: true,
-    blending: THREE.AdditiveBlending,
-    depthWrite: false,
-    vertexColors: true
-  });
-
-  const points = new THREE.Points(geometry, material);
-  scene.add(points);
-  return points;
-}
-
 // Create front & back star fields
 createStarField();
-createBackStarSprites();
 // Create stars (this should remain where it is)
 const { mesh: stars, positions } = createStarField();
 

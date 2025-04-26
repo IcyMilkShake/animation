@@ -33,7 +33,38 @@ html, body {
   transition: opacity 1s ease; /* Smooth fade in/out */
   opacity: 1;
 }
+.nebula-container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: -1;
+}
 
+#nebula-canvas {
+  width: 100%;
+  height: 100%;
+}
+.content {
+  position: relative;
+  color: white;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  padding: 2rem;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+  text-align: center;
+}
+
+.controls {
+  margin-top: 2rem;
+  display: flex;
+  gap: 1rem;
+}
 
 /* Canvas Styles */
 canvas {
