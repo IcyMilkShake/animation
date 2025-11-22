@@ -1555,7 +1555,6 @@ function createNavMenu() {
   
   document.head.appendChild(styleTag);
 }
-// Add new styles with specific selectors
 const styleTag = document.createElement('style');
 styleTag.innerHTML = `
   .transition-container {
@@ -1569,40 +1568,43 @@ styleTag.innerHTML = `
     opacity: 0;
     visibility: hidden;
     transition: opacity 0.2s ease;
-    perspective: 2000px;
-    display: flex;
-    justify-content: center;
-    align-items: center;
+    perspective: 1500px;
   }
   
   .transition-container.active {
-    opacity: 1 !important;
-    visibility: visible !important;
-    pointer-events: all !important;
+    opacity: 1;
+    visibility: visible;
+    pointer-events: all;
   }
   
-  /* Wrapper that rotates */
-  .transition-container .panels-wrapper {
-    position: relative;
-    width: 100%;
-    height: 100%;
-    transform-style: preserve-3d;
-    transition: transform 0.8s cubic-bezier(0.645, 0.045, 0.355, 1.000);
-  }
-  
-  /* Container for panels */
-  .transition-container .horizontal-doors {
+  /* Horizontal doors container */
+  .horizontal-doors {
     position: absolute;
     top: 0;
     left: 0;
     width: 100%;
     height: 100%;
     display: flex;
-    transition: all 0.7s cubic-bezier(0.86, 0, 0.07, 1);
+    justify-content: space-between;
+    transition: transform 0.8s cubic-bezier(0.645, 0.045, 0.355, 1.000);
   }
   
-  /* The two panels */
-  .transition-container .door {
+  /* Vertical doors container */
+  .vertical-doors {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+  }
+  
+  /* Common door styles */
+  .door {
     background-color: #111;
     position: relative;
     overflow: hidden;
@@ -1610,8 +1612,8 @@ styleTag.innerHTML = `
     transition: all 0.7s cubic-bezier(0.86, 0, 0.07, 1);
   }
   
-  /* Texture */
-  .transition-container .door::after {
+  /* Add subtle pattern/texture to make doors more visible */
+  .door::after {
     content: '';
     position: absolute;
     top: 0;
@@ -1624,145 +1626,176 @@ styleTag.innerHTML = `
     background-size: 10px 10px;
     opacity: 0.3;
   }
-  
-  /* Horizontal layout */
-  .transition-container .horizontal-doors.horizontal {
-    flex-direction: row;
-  }
-  
-  .transition-container .horizontal-doors.horizontal .door {
+
+  /* Horizontal doors */
+  .door-left, .door-right {
     height: 100%;
     width: 0%;
   }
   
-  .transition-container .horizontal-doors.horizontal .door:first-child {
-    border-right: 2px solid rgba(255, 255, 255, 0.2);
+  .door-left {
+    border-right: 3px solid rgba(255, 255, 255, 0.2);
   }
   
-  .transition-container .horizontal-doors.horizontal .door:last-child {
-    border-left: 2px solid rgba(255, 255, 255, 0.2);
+  .door-right {
+    border-left: 3px solid rgba(255, 255, 255, 0.2);
   }
   
-  /* Vertical layout */
-  .transition-container .horizontal-doors.vertical {
-    flex-direction: column;
-  }
-  
-  .transition-container .horizontal-doors.vertical .door {
+  /* Vertical doors */
+  .door-top, .door-bottom {
     width: 100%;
-    height: 50%;
+    height: 0%;
   }
   
-  .transition-container .horizontal-doors.vertical .door:first-child {
-    border-bottom: 2px solid rgba(255, 255, 255, 0.2);
-    border-right: none;
+  .door-top {
+    border-bottom: 3px solid rgba(255, 255, 255, 0.2);
   }
   
-  .transition-container .horizontal-doors.vertical .door:last-child {
-    border-top: 2px solid rgba(255, 255, 255, 0.2);
-    border-left: none;
+  .door-bottom {
+    border-top: 3px solid rgba(255, 255, 255, 0.2);
   }
   
-  /* Stage 1: Close doors */
-  .transition-container.stage-1 .horizontal-doors.horizontal .door {
+  /* Stage 1: Horizontal doors close */
+  .transition-container.stage-1 .door-left,
+  .transition-container.stage-1 .door-right {
     width: 50%;
   }
   
-  /* Stage 2: Rotate */
-  .transition-container.stage-2 .panels-wrapper {
-    transform: rotateZ(90deg);
-  }
-  
-  /* Stage 3: Open doors */
-  .transition-container.stage-3 .horizontal-doors.vertical .door:first-child {
-    transform: translateY(-100%);
+  /* Stage 2: Switch from horizontal to vertical */
+  .transition-container.stage-2 .horizontal-doors {
     opacity: 0;
   }
   
-  .transition-container.stage-3 .horizontal-doors.vertical .door:last-child {
-    transform: translateY(100%);
-    opacity: 0;
+  .transition-container.stage-2 .vertical-doors {
+    opacity: 1;
+  }
+  
+  /* Stage 2b: Vertical doors close */
+  .transition-container.stage-2 .door-top,
+  .transition-container.stage-2 .door-bottom {
+    height: 50%;
+  }
+  
+  /* Stage 3: Vertical doors open */
+  .transition-container.stage-3 .door-top {
+    height: 0%;
+    transform: translateY(-20px);
+    opacity: 0.7;
+  }
+  
+  .transition-container.stage-3 .door-bottom {
+    height: 0%;
+    transform: translateY(20px);
+    opacity: 0.7;
   }
 `;
 document.head.appendChild(styleTag);
 
-// Remove old transition container if exists
-const oldTransition = document.querySelector('.transition-container');
-if (oldTransition) {
-  oldTransition.remove();
-}
-
-// Create new structure (using your variable names)
+// Create the transition containers and doors
 const transitionContainer = document.createElement('div');
 transitionContainer.className = 'transition-container';
 
-const panelsWrapper = document.createElement('div');
-panelsWrapper.className = 'panels-wrapper';
-
+// Horizontal doors container
 const horizontalDoorsContainer = document.createElement('div');
-horizontalDoorsContainer.className = 'horizontal-doors horizontal';
+horizontalDoorsContainer.className = 'horizontal-doors';
 
 const doorLeft = document.createElement('div');
-doorLeft.className = 'door';
+doorLeft.className = 'door door-left';
 
 const doorRight = document.createElement('div');
-doorRight.className = 'door';
+doorRight.className = 'door door-right';
 
 horizontalDoorsContainer.appendChild(doorLeft);
 horizontalDoorsContainer.appendChild(doorRight);
-panelsWrapper.appendChild(horizontalDoorsContainer);
-transitionContainer.appendChild(panelsWrapper);
+
+// Vertical doors container
+const verticalDoorsContainer = document.createElement('div');
+verticalDoorsContainer.className = 'vertical-doors';
+
+const doorTop = document.createElement('div');
+doorTop.className = 'door door-top';
+
+const doorBottom = document.createElement('div');
+doorBottom.className = 'door door-bottom';
+
+verticalDoorsContainer.appendChild(doorTop);
+verticalDoorsContainer.appendChild(doorBottom);
+
+// Add both containers to the main transition container
+transitionContainer.appendChild(horizontalDoorsContainer);
+transitionContainer.appendChild(verticalDoorsContainer);
 document.body.appendChild(transitionContainer);
 
-// Update your performDoorTransition function
 function performDoorTransition(callback) {
-  // Prevent multiple transitions
-  if (transitionContainer.classList.contains('active')) return;
+  isScrolling = true;
   
-  // Stage 1: Close horizontal doors
-  transitionContainer.classList.add('active', 'stage-1');
+  // Get the current and target section IDs
+  const fromSection = sections[currentSectionIndex].id;
+  const toSection = sections[currentSectionIndex === 0 ? 1 : 0].id;
   
+  // Update door colors based on the transition
+  updateDoorColors(fromSection, toSection);
+  
+  // Stage 1: Activate container and close horizontal doors
+  transitionContainer.classList.add('active');
+  
+  // Add a short delay before starting animation for better visibility
   setTimeout(() => {
-    // Stage 2: Rotate + switch layout
-    transitionContainer.classList.add('stage-2');
-    horizontalDoorsContainer.classList.remove('horizontal');
-    horizontalDoorsContainer.classList.add('vertical');
+    // Play sound effect if desired
+    playTransitionSound('close');
     
-    // Execute callback during rotation
+    // Close horizontal doors
+    transitionContainer.classList.add('stage-1');
+    
+    // Stage 2: Switch to vertical doors
     setTimeout(() => {
-      if (callback) callback();
+      playTransitionSound('flip');
+      transitionContainer.classList.add('stage-2');
       
-      // Stage 3: Open doors
+      // Execute the callback (change section) during the orientation change
       setTimeout(() => {
-        transitionContainer.classList.add('stage-3');
+        callback();
         
-        // Cleanup and reset
+        // Stage 3: Open vertical doors
         setTimeout(() => {
-          transitionContainer.classList.remove('active', 'stage-1', 'stage-2', 'stage-3');
-          horizontalDoorsContainer.classList.remove('vertical');
-          horizontalDoorsContainer.classList.add('horizontal');
-        }, 800);
-      }, 400);
-    }, 400);
-  }, 700);
+          playTransitionSound('open');
+          transitionContainer.classList.add('stage-3');
+          
+          // Reset the container for next transition
+          setTimeout(() => {
+            transitionContainer.classList.remove('active', 'stage-1', 'stage-2', 'stage-3');
+            isScrolling = false;
+          }, 700); // Longer cleanup time
+        }, 600); // Longer wait before opening
+      }, 400); // Wait before callback
+    }, 700); // Wait before switching orientation
+  }, 100); // Initial delay
 }
 
-// Keep your updateDoorColors function
+// Add custom door color based on the section being transitioned to
 function updateDoorColors(fromSection, toSection) {
   let doorColor = '#111';
   
   if (fromSection === 'home' && toSection === 'about') {
-    doorColor = '#020217';
+    // Transition from home to about
+    doorColor = '#020217'; // Match about section background
   } else if (fromSection === 'about' && toSection === 'home') {
-    doorColor = '#333';
+    // Transition from about to home
+    doorColor = '#333'; // Match home section background
   }
   
+  // Apply colors to all doors
   doorLeft.style.backgroundColor = doorColor;
   doorRight.style.backgroundColor = doorColor;
+  doorTop.style.backgroundColor = doorColor;
+  doorBottom.style.backgroundColor = doorColor;
   
+  // Add glowing effect to doors
   const shadowStyle = `0 0 30px ${doorColor}`;
   doorLeft.style.boxShadow = shadowStyle;
   doorRight.style.boxShadow = shadowStyle;
+  doorTop.style.boxShadow = shadowStyle;
+  doorBottom.style.boxShadow = shadowStyle;
 }
 
 // Sound effects for the different transition phases
