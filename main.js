@@ -944,23 +944,6 @@ scene.add(lightHelper); // Add the light helper to the scene
 const lightHelper2 = new THREE.PointLightHelper(pointLight2, 1); // The '1' is the size of the helper
 scene.add(lightHelper2); // Add the light helper to the scene
 
-// Setup Post-processing Bloom
-const renderScene = new RenderPass(scene, camera);
-
-const bloomPass = new UnrealBloomPass(
-  new THREE.Vector2(window.innerWidth, window.innerHeight),
-  1.5,
-  0.4,
-  0.85
-);
-bloomPass.threshold = 0;
-bloomPass.strength = 2.0; // Increased strength for better glow
-bloomPass.radius = 0.5;
-
-const composer = new EffectComposer(renderer);
-composer.addPass(renderScene);
-composer.addPass(bloomPass);
-
 // Set initial camera position
 camera.position.set(0, 0, 30);
 
@@ -1178,8 +1161,7 @@ function simpleAnimateGlow() {
 }
 
 // Use the appropriate animation function based on complexity
-// Force simpleAnimateGlow to avoid breaking InstancedMesh with custom shader
-const animationFunction = simpleAnimateGlow;
+const animationFunction = THREE.REVISION >= 125 ? animateGlow : simpleAnimateGlow;
 
 // Enhanced animation function
 function animateState(targetState, duration = 2.5) {
@@ -1657,7 +1639,6 @@ window.addEventListener('resize', () => {
   camera.aspect = window.innerWidth / window.innerHeight;
   camera.updateProjectionMatrix();
   renderer.setSize(window.innerWidth, window.innerHeight);
-  composer.setSize(window.innerWidth, window.innerHeight);
 });
 
 // Add button navigation handling for all buttons with class 'btn'
@@ -1719,7 +1700,6 @@ function createCustomPlanets() {
     const planetMaterial = planetData.texture
       ? new THREE.MeshBasicMaterial({
           map: planetData.texture,
-          color: planetData.color || 0xffffff,
           transparent: true,
           side: THREE.DoubleSide,
         })
@@ -1909,14 +1889,12 @@ function createCustomPlanets() {
     name: "JS",
     size: 5,
     texture: jsTexture,
-    color: 0xffff00,
     orbitRadius: 25,
     orbitSpeed: 0.09,
     orbitPhase: 0,
     orbitTilt: 0.1,
     info: "2 Years of Javascript Working Experience",
-    useBox: true,
-    keepPointsVisible: true
+    useBox: true
   };
   
   const jsPlanet = createPlanetWithPointCloud(jsPlanetData);
@@ -2037,15 +2015,10 @@ function animatePointCloudMorph(pointCloud, targetState, duration = 1.5) {
         
         // If showing the solid planet, fade in for smooth transition
         if (targetState === 'shape') {
-          // Check if we should keep points visible (e.g. for JS planet)
-          if (pointCloud.userData.planet.userData.keepPointsVisible) {
-             gsap.to(pointCloud.material, { opacity: 0.8, duration: 0.5 });
-          } else {
-            gsap.fromTo(pointCloud.material, 
-              { opacity: 0.8 }, 
-              { opacity: 0, duration: 0.5 }
-            );
-          }
+          gsap.fromTo(pointCloud.material, 
+            { opacity: 0.8 }, 
+            { opacity: 0, duration: 0.5 }
+          );
         } else {
           gsap.fromTo(pointCloud.material, 
             { opacity: 0 }, 
@@ -2799,6 +2772,317 @@ function enhancedScrambleEffect(container, fullText) {
 }
 
 
+function onMouseClick(event) {
+  // Calculate normalized mouse coordinates
+  const rect = renderer.domElement.getBoundingClientRect();
+  mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+  mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+
+  raycaster.setFromCamera(mouse, camera);
+
+  // Create a list of all clickable objects - include both solid planets and point clouds
+  const clickableObjects = [donut];
+
+  orbitalPlanets.forEach(planet => {
+    if (planet) {
+      clickableObjects.push(planet);
+      if (planet.userData.pointCloud) {
+        clickableObjects.push(planet.userData.pointCloud);
+      }
+    }
+  });
+
+  const intersects = raycaster.intersectObjects(clickableObjects);
+
+  if (intersects.length > 0) {
+    const clickedObject = intersects[0].object;
+
+    let targetObject = null;
+    let isDonut = false;
+
+    if (clickedObject === donut) {
+      targetObject = donut;
+      isDonut = true;
+    } else if (clickedObject.type === 'Points') {
+      targetObject = clickedObject.userData.planet;
+    } else {
+      targetObject = clickedObject;
+    }
+
+    if (targetObject && targetObject.userData && targetObject.userData.clickable) {
+      // Handle mobile-specific behavior
+      if (/Mobi|Android/i.test(navigator.userAgent)) {
+        // Remove text boxes from other planets if a new one is clicked
+        orbitalPlanets.forEach(planet => {
+          if (planet.userData && planet.userData.pointCloud && planet !== targetObject) {
+            const planetTextBox = document.querySelector(`.sci-fi-text-box[data-id="${planet.userData.index}"]`);
+            if (planetTextBox) {
+              planetTextBox.classList.remove('active');
+              setTimeout(() => planetTextBox.remove(), 200);
+              planet.userData.isShowingInfo = false;
+            }
+            // Switch other planets back to 'sphere' state
+            const pointCloud = planet.userData.pointCloud;
+            if (pointCloud.userData.currentState === 'shape') {
+              animatePointCloudMorph(pointCloud, 'sphere');
+              pointCloud.userData.currentState = 'sphere';
+            }
+          }
+        });
+      }
+
+      // Donut-specific behavior (since it's not handled by togglePlanetView)
+      if (isDonut) {
+        const existingTextBox = document.querySelector(`.sci-fi-text-box[data-id="donut"]`);
+        if (existingTextBox && targetObject.userData.isShowingInfo) {
+          // If the text box is showing, remove it on second click
+          existingTextBox.classList.remove('active');
+          setTimeout(() => existingTextBox.remove(), 200);
+          targetObject.userData.isShowingInfo = false;
+        } else if (!existingTextBox && !targetObject.userData.isShowingInfo) {
+          // If the text box doesn't exist, create it on the first click
+          const fullText = "This is the central donut object of our universe. It represents the core of our system.";
+          const textBox = createSciFiTextBox("", {
+            x: targetObject.position.x,
+            y: targetObject.position.y,
+            z: targetObject.position.z,
+            objectIndex: null
+          }, true);
+
+          enhancedScrambleEffect(textBox, fullText);
+          targetObject.userData.isShowingInfo = true;
+        }
+      } else {
+        // Let togglePlanetView handle both morph and text box
+        togglePlanetView(targetObject);
+      }
+
+      // Click animation (still here)
+      if (!targetObject.userData.originalScale) {
+        targetObject.userData.originalScale = {
+          x: targetObject.scale.x,
+          y: targetObject.scale.y,
+          z: targetObject.scale.z
+        };
+      }
+
+      const originalScale = new THREE.Vector3(
+        targetObject.userData.originalScale.x,
+        targetObject.userData.originalScale.y,
+        targetObject.userData.originalScale.z
+      );
+
+      gsap.to(targetObject.scale, {
+        x: originalScale.x * 1.2,
+        y: originalScale.y * 1.2,
+        z: originalScale.z * 1.2,
+        duration: 0.3,
+        yoyo: true,
+        repeat: 1,
+        onComplete: () => {
+          targetObject.scale.set(
+            originalScale.x,
+            originalScale.y,
+            originalScale.z
+          );
+        }
+      });
+    }
+  }
+}
+
+
+
+
+let hasTriggeredTypewriterEffect = false;
+let typewriterInterval = null;
+
+// Function to trigger the typewriter effect on scroll
+function triggerTypewriterEffect() {
+  if (hasTriggeredTypewriterEffect) return; // Check if it's already triggered
+
+  const animatedText = document.querySelector("#animatedText");
+  if (!animatedText) return; // Guard clause if element doesn't exist
+  
+  // Set up CSS for the container
+  animatedText.style.position = "relative";
+  animatedText.style.display = "inline-block";
+  
+  // Clear any previous content
+  animatedText.innerHTML = "";
+  
+  // Create a text span
+  const container = document.createElement("span");
+  container.className = "typewriter-text";
+  animatedText.appendChild(container);
+  
+  // Create the cursor element
+  const cursorSpan = document.createElement("span");
+  cursorSpan.className = "typewriter-cursor";
+  cursorSpan.innerHTML = "|";
+  cursorSpan.style.display = "inline-block";
+  cursorSpan.style.marginLeft = "2px";
+  cursorSpan.style.color = "#ffffff"; // Make sure cursor is visible (white color)
+  cursorSpan.style.fontWeight = "bold"; // Make it more visible
+  animatedText.appendChild(cursorSpan);
+  
+  // Add CSS for cursor blinking animation
+  const style = document.createElement("style");
+  style.innerHTML = `
+    @keyframes cursor-blink {
+      0% { opacity: 1; }
+      50% { opacity: 0; }
+      100% { opacity: 1; }
+    }
+    .typewriter-cursor {
+      animation: cursor-blink 1.1s step-end infinite;
+    }
+  `;
+  document.head.appendChild(style);
+  
+  // Set the flag to true before animation starts
+  hasTriggeredTypewriterEffect = true;
+  
+  // The full text to type
+  const fullText = "My Projects";
+  
+  // Characters for scrambling effect
+  const scrambleChars = "!<>-_\\/[]{}—=+*^?#________";
+  
+  // Initialize tracking variables
+  let charIndex = 0;
+  let scrambleInterval = null;
+  let isScrambling = false;
+  
+  // Clear any existing interval
+  if (typewriterInterval) {
+    clearInterval(typewriterInterval);
+    typewriterInterval = null;
+  }
+  
+  // Function to get a random character from scramble chars
+  function getRandomChar() {
+    return scrambleChars.charAt(Math.floor(Math.random() * scrambleChars.length));
+  }
+  
+  // Function to scramble text
+  function scrambleText() {
+    if (!isScrambling) return;
+    
+    // Get current finished text portion
+    const stableText = fullText.substring(0, charIndex);
+    
+    // Generate scrambled portion (between 2-6 chars)
+    const scrambleLength = Math.floor(Math.random() * 4) + 2;
+    let scrambledPortion = "";
+    
+    for (let i = 0; i < scrambleLength; i++) {
+      scrambledPortion += getRandomChar();
+    }
+    
+    // Update the display
+    container.textContent = stableText + scrambledPortion;
+  }
+  
+  // Function to handle the typewriter animation
+  const typeNextChar = () => {
+    if (charIndex < fullText.length) {
+      // Generate random typing delay (between 50-300ms) for realism
+      const typingSpeed = Math.floor(Math.random() * 50) + 80;
+      const randomValue = Math.random();
+      
+      // Occasionally show scrambling effect before adding next character
+      if (randomValue > 0.7) {
+        // Start scrambling
+        isScrambling = true;
+        
+        // Create scramble effect
+        scrambleInterval = setInterval(scrambleText, 50);
+        
+        // After a brief scramble, stop and add the next real character
+        setTimeout(() => {
+          // Stop scrambling
+          clearInterval(scrambleInterval);
+          isScrambling = false;
+          
+          // Add the next character
+          charIndex++;
+          container.textContent = fullText.substring(0, charIndex);
+          
+          // Continue with the next character
+          setTimeout(typeNextChar, typingSpeed);
+        }, Math.random() * 300 + 100);
+      } 
+      // Occasionally make a typo
+      else if (randomValue > 0.92) {
+        // Simulate a typo
+        const typoChars = "qwertyuiopasdfghjklzxcvbnm";
+        const randomTypo = typoChars.charAt(Math.floor(Math.random() * typoChars.length));
+        
+        // Insert typo
+        const currentText = fullText.substring(0, charIndex);
+        container.textContent = currentText + randomTypo;
+        
+        // Then delete it after a small delay
+        setTimeout(() => {
+          container.textContent = currentText;
+          
+          // Continue with the next character
+          setTimeout(typeNextChar, typingSpeed);
+        }, 200);
+      }
+      // Normal typing
+      else {
+        charIndex++;
+        container.textContent = fullText.substring(0, charIndex);
+        
+        // Occasionally pause longer (as if thinking)
+        if (randomValue > 0.85) {
+          setTimeout(typeNextChar, Math.random() * 600 + 400);
+        } else {
+          // Regular typing speed
+          setTimeout(typeNextChar, typingSpeed);
+        }
+      }
+    } else {
+      // Text is complete
+      console.log("Typewriter animation completed");
+      // Keep the cursor blinking after completion
+    }
+  };
+  
+  // Start everything with a 3-second delay
+  setTimeout(() => {
+    setTimeout(typeNextChar, 100); // Start the typewriter effect after 3 seconds
+  }, 1250); // Delay before starting everything (3000ms = 3 seconds)
+  
+  // Set up the ScrollTrigger to start the animation
+  ScrollTrigger.create({
+    trigger: "#animatedText",
+    start: "top 80%",
+    end: "bottom top", 
+    markers: false,
+    onLeaveBack: () => {
+      // Reset if scrolling back up
+      if (charIndex < fullText.length) {
+        // Clear any scrambling in progress
+        if (scrambleInterval) {
+          clearInterval(scrambleInterval);
+          isScrambling = false;
+        }
+        
+        // Reset text
+        container.textContent = "";
+        charIndex = 0;
+        
+        // Restart animation
+        setTimeout(typeNextChar, 100);
+      }
+    }
+  });
+}
+
+
 let targetCameraX = 0;
 let targetCameraY = 0;
 
@@ -2905,8 +3189,7 @@ function animate() {
   camera.lookAt(scene.position); // Always look at the center
   renderer.autoClear = true;
   renderer.clear();
-  // Use composer for bloom effect on the main scene
-  composer.render();
+  renderer.render(scene, camera);
   
   if (current_page !== "home") {
     fogElement.style.opacity = '1'; // Full opacity (visible)
