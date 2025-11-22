@@ -1555,7 +1555,7 @@ function createNavMenu() {
   
   document.head.appendChild(styleTag);
 }
-// Add styles
+// Add new styles with specific selectors
 const styleTag = document.createElement('style');
 styleTag.innerHTML = `
   .transition-container {
@@ -1576,13 +1576,13 @@ styleTag.innerHTML = `
   }
   
   .transition-container.active {
-    opacity: 1;
-    visibility: visible;
-    pointer-events: all;
+    opacity: 1 !important;
+    visibility: visible !important;
+    pointer-events: all !important;
   }
   
-  /* Wrapper that holds both panels and rotates */
-  .panels-wrapper {
+  /* Wrapper that rotates */
+  .transition-container .panels-wrapper {
     position: relative;
     width: 100%;
     height: 100%;
@@ -1590,8 +1590,8 @@ styleTag.innerHTML = `
     transition: transform 0.8s cubic-bezier(0.645, 0.045, 0.355, 1.000);
   }
   
-  /* Container for the two panels */
-  .doors-container {
+  /* Container for panels */
+  .transition-container .horizontal-doors {
     position: absolute;
     top: 0;
     left: 0;
@@ -1601,8 +1601,8 @@ styleTag.innerHTML = `
     transition: all 0.7s cubic-bezier(0.86, 0, 0.07, 1);
   }
   
-  /* The two main panels */
-  .panel {
+  /* The two panels */
+  .transition-container .door {
     background-color: #111;
     position: relative;
     overflow: hidden;
@@ -1610,8 +1610,8 @@ styleTag.innerHTML = `
     transition: all 0.7s cubic-bezier(0.86, 0, 0.07, 1);
   }
   
-  /* Texture overlay */
-  .panel::after {
+  /* Texture */
+  .transition-container .door::after {
     content: '';
     position: absolute;
     top: 0;
@@ -1625,141 +1625,145 @@ styleTag.innerHTML = `
     opacity: 0.3;
   }
   
-  /* Initial state - horizontal layout */
-  .doors-container.horizontal {
+  /* Horizontal layout */
+  .transition-container .horizontal-doors.horizontal {
     flex-direction: row;
   }
   
-  .horizontal .panel {
+  .transition-container .horizontal-doors.horizontal .door {
     height: 100%;
     width: 0%;
   }
   
-  .horizontal .panel:first-child {
+  .transition-container .horizontal-doors.horizontal .door:first-child {
     border-right: 2px solid rgba(255, 255, 255, 0.2);
   }
   
-  .horizontal .panel:last-child {
+  .transition-container .horizontal-doors.horizontal .door:last-child {
     border-left: 2px solid rgba(255, 255, 255, 0.2);
   }
   
-  /* Vertical layout (after rotation) */
-  .doors-container.vertical {
+  /* Vertical layout */
+  .transition-container .horizontal-doors.vertical {
     flex-direction: column;
   }
   
-  .vertical .panel {
+  .transition-container .horizontal-doors.vertical .door {
     width: 100%;
     height: 50%;
   }
   
-  .vertical .panel:first-child {
+  .transition-container .horizontal-doors.vertical .door:first-child {
     border-bottom: 2px solid rgba(255, 255, 255, 0.2);
     border-right: none;
   }
   
-  .vertical .panel:last-child {
+  .transition-container .horizontal-doors.vertical .door:last-child {
     border-top: 2px solid rgba(255, 255, 255, 0.2);
     border-left: none;
   }
   
-  /* Stage 1: Close horizontal doors */
-  .transition-container.stage-1 .horizontal .panel {
+  /* Stage 1: Close doors */
+  .transition-container.stage-1 .horizontal-doors.horizontal .door {
     width: 50%;
   }
   
-  /* Stage 2: Rotate 90 degrees */
+  /* Stage 2: Rotate */
   .transition-container.stage-2 .panels-wrapper {
     transform: rotateZ(90deg);
   }
   
-  /* Stage 3: Open vertical doors */
-  .transition-container.stage-3 .vertical .panel:first-child {
+  /* Stage 3: Open doors */
+  .transition-container.stage-3 .horizontal-doors.vertical .door:first-child {
     transform: translateY(-100%);
     opacity: 0;
   }
   
-  .transition-container.stage-3 .vertical .panel:last-child {
+  .transition-container.stage-3 .horizontal-doors.vertical .door:last-child {
     transform: translateY(100%);
     opacity: 0;
   }
 `;
 document.head.appendChild(styleTag);
 
-// Create the transition structure
+// Remove old transition container if exists
+const oldTransition = document.querySelector('.transition-container');
+if (oldTransition) {
+  oldTransition.remove();
+}
+
+// Create new structure (using your variable names)
 const transitionContainer = document.createElement('div');
 transitionContainer.className = 'transition-container';
 
 const panelsWrapper = document.createElement('div');
 panelsWrapper.className = 'panels-wrapper';
 
-const doorsContainer = document.createElement('div');
-doorsContainer.className = 'doors-container horizontal';
+const horizontalDoorsContainer = document.createElement('div');
+horizontalDoorsContainer.className = 'horizontal-doors horizontal';
 
-const panel1 = document.createElement('div');
-panel1.className = 'panel';
+const doorLeft = document.createElement('div');
+doorLeft.className = 'door';
 
-const panel2 = document.createElement('div');
-panel2.className = 'panel';
+const doorRight = document.createElement('div');
+doorRight.className = 'door';
 
-doorsContainer.appendChild(panel1);
-doorsContainer.appendChild(panel2);
-panelsWrapper.appendChild(doorsContainer);
+horizontalDoorsContainer.appendChild(doorLeft);
+horizontalDoorsContainer.appendChild(doorRight);
+panelsWrapper.appendChild(horizontalDoorsContainer);
 transitionContainer.appendChild(panelsWrapper);
 document.body.appendChild(transitionContainer);
 
+// Update your performDoorTransition function
 function performDoorTransition(callback) {
+  // Prevent multiple transitions
+  if (transitionContainer.classList.contains('active')) return;
+  
   // Stage 1: Close horizontal doors
   transitionContainer.classList.add('active', 'stage-1');
   
   setTimeout(() => {
-    // Stage 2: Rotate 90 degrees + switch to vertical layout
+    // Stage 2: Rotate + switch layout
     transitionContainer.classList.add('stage-2');
-    doorsContainer.classList.remove('horizontal');
-    doorsContainer.classList.add('vertical');
+    horizontalDoorsContainer.classList.remove('horizontal');
+    horizontalDoorsContainer.classList.add('vertical');
     
     // Execute callback during rotation
     setTimeout(() => {
-      callback();
+      if (callback) callback();
       
-      // Stage 3: Open vertical doors
+      // Stage 3: Open doors
       setTimeout(() => {
         transitionContainer.classList.add('stage-3');
         
-        // Cleanup
+        // Cleanup and reset
         setTimeout(() => {
           transitionContainer.classList.remove('active', 'stage-1', 'stage-2', 'stage-3');
-          doorsContainer.classList.remove('vertical');
-          doorsContainer.classList.add('horizontal');
+          horizontalDoorsContainer.classList.remove('vertical');
+          horizontalDoorsContainer.classList.add('horizontal');
         }, 800);
       }, 400);
     }, 400);
   }, 700);
 }
 
-// Optional: Update panel colors based on sections
-function updatePanelColors(fromSection, toSection) {
-  let color = '#111';
+// Keep your updateDoorColors function
+function updateDoorColors(fromSection, toSection) {
+  let doorColor = '#111';
   
   if (fromSection === 'home' && toSection === 'about') {
-    color = '#020217';
+    doorColor = '#020217';
   } else if (fromSection === 'about' && toSection === 'home') {
-    color = '#333';
+    doorColor = '#333';
   }
   
-  panel1.style.backgroundColor = color;
-  panel2.style.backgroundColor = color;
+  doorLeft.style.backgroundColor = doorColor;
+  doorRight.style.backgroundColor = doorColor;
   
-  const shadowStyle = `0 0 30px ${color}`;
-  panel1.style.boxShadow = shadowStyle;
-  panel2.style.boxShadow = shadowStyle;
+  const shadowStyle = `0 0 30px ${doorColor}`;
+  doorLeft.style.boxShadow = shadowStyle;
+  doorRight.style.boxShadow = shadowStyle;
 }
-
-// Example usage:
-// performDoorTransition(() => {
-//   // Change section here
-//   console.log('Transitioning...');
-// });
 
 // Sound effects for the different transition phases
 function playTransitionSound(type) {
