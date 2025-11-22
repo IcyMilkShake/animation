@@ -1568,7 +1568,10 @@ styleTag.innerHTML = `
     opacity: 0;
     visibility: hidden;
     transition: opacity 0.2s ease;
-    perspective: 1500px;
+    perspective: 2000px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
   }
   
   .transition-container.active {
@@ -1577,7 +1580,16 @@ styleTag.innerHTML = `
     pointer-events: all;
   }
   
-  /* Horizontal doors container */
+  /* Wrapper that holds both doors and rotates them together */
+  .doors-wrapper {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    transform-style: preserve-3d;
+    transition: transform 0.8s cubic-bezier(0.645, 0.045, 0.355, 1.000);
+  }
+  
+  /* Container for the two doors - changes from row to column */
   .horizontal-doors {
     position: absolute;
     top: 0;
@@ -1585,22 +1597,17 @@ styleTag.innerHTML = `
     width: 100%;
     height: 100%;
     display: flex;
-    justify-content: space-between;
-    transition: transform 0.8s cubic-bezier(0.645, 0.045, 0.355, 1.000);
+    transition: all 0.7s cubic-bezier(0.86, 0, 0.07, 1);
   }
   
-  /* Vertical doors container */
-  .vertical-doors {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    display: flex;
+  /* When horizontal (initial state) */
+  .horizontal-doors.is-horizontal {
+    flex-direction: row;
+  }
+  
+  /* When vertical (after rotation) */
+  .horizontal-doors.is-vertical {
     flex-direction: column;
-    justify-content: space-between;
-    opacity: 0;
-    transition: opacity 0.3s ease;
   }
   
   /* Common door styles */
@@ -1627,66 +1634,58 @@ styleTag.innerHTML = `
     opacity: 0.3;
   }
 
-  /* Horizontal doors */
-  .door-left, .door-right {
+  /* Horizontal layout - doors are left and right */
+  .is-horizontal .door-left,
+  .is-horizontal .door-right {
     height: 100%;
     width: 0%;
   }
   
-  .door-left {
+  .is-horizontal .door-left {
     border-right: 3px solid rgba(255, 255, 255, 0.2);
   }
   
-  .door-right {
+  .is-horizontal .door-right {
     border-left: 3px solid rgba(255, 255, 255, 0.2);
   }
   
-  /* Vertical doors */
-  .door-top, .door-bottom {
+  /* Vertical layout - same doors become top and bottom */
+  .is-vertical .door-left,
+  .is-vertical .door-right {
     width: 100%;
-    height: 0%;
+    height: 50%;
+    border-left: none;
+    border-right: none;
   }
   
-  .door-top {
+  .is-vertical .door-left {
     border-bottom: 3px solid rgba(255, 255, 255, 0.2);
   }
   
-  .door-bottom {
+  .is-vertical .door-right {
     border-top: 3px solid rgba(255, 255, 255, 0.2);
   }
   
-  /* Stage 1: Horizontal doors close */
-  .transition-container.stage-1 .door-left,
-  .transition-container.stage-1 .door-right {
+  /* Stage 1: Close horizontal doors */
+  .transition-container.stage-1 .is-horizontal .door-left,
+  .transition-container.stage-1 .is-horizontal .door-right {
     width: 50%;
   }
   
-  /* Stage 2: Switch from horizontal to vertical */
-  .transition-container.stage-2 .horizontal-doors {
+  /* Stage 2: Rotate the wrapper 90 degrees */
+  .transition-container.stage-2 .doors-wrapper {
+    transform: rotateZ(90deg);
+  }
+  
+  /* Stage 3: Open vertical doors */
+  .transition-container.stage-3 .is-vertical .door-left {
+    transform: translateY(-100%);
     opacity: 0;
   }
   
-  .transition-container.stage-2 .vertical-doors {
-    opacity: 1;
-  }
-  
-  /* Stage 2b: Vertical doors close */
-  .transition-container.stage-2 .door-top,
-  .transition-container.stage-2 .door-bottom {
-    height: 50%;
-  }
-  
-  /* Stage 3: Vertical doors open */
-  .transition-container.stage-3 .door-top {
-    height: 0%;
-    transform: translateY(-20px);
-    opacity: 0.7;
-  }
-  
-  .transition-container.stage-3 .door-bottom {
-    height: 0%;
-    transform: translateY(20px);
-    opacity: 0.7;
+  .transition-container.stage-3 .is-vertical .door-right {
+    transform: translateY(100%);
+    opacity: 0;
   }
 `;
 document.head.appendChild(styleTag);
@@ -1695,10 +1694,15 @@ document.head.appendChild(styleTag);
 const transitionContainer = document.createElement('div');
 transitionContainer.className = 'transition-container';
 
-// Horizontal doors container
-const horizontalDoorsContainer = document.createElement('div');
-horizontalDoorsContainer.className = 'horizontal-doors';
+// Wrapper that will rotate
+const doorsWrapper = document.createElement('div');
+doorsWrapper.className = 'doors-wrapper';
 
+// Container for the two doors
+const horizontalDoorsContainer = document.createElement('div');
+horizontalDoorsContainer.className = 'horizontal-doors is-horizontal';
+
+// The two doors (same elements throughout)
 const doorLeft = document.createElement('div');
 doorLeft.className = 'door door-left';
 
@@ -1707,23 +1711,8 @@ doorRight.className = 'door door-right';
 
 horizontalDoorsContainer.appendChild(doorLeft);
 horizontalDoorsContainer.appendChild(doorRight);
-
-// Vertical doors container
-const verticalDoorsContainer = document.createElement('div');
-verticalDoorsContainer.className = 'vertical-doors';
-
-const doorTop = document.createElement('div');
-doorTop.className = 'door door-top';
-
-const doorBottom = document.createElement('div');
-doorBottom.className = 'door door-bottom';
-
-verticalDoorsContainer.appendChild(doorTop);
-verticalDoorsContainer.appendChild(doorBottom);
-
-// Add both containers to the main transition container
-transitionContainer.appendChild(horizontalDoorsContainer);
-transitionContainer.appendChild(verticalDoorsContainer);
+doorsWrapper.appendChild(horizontalDoorsContainer);
+transitionContainer.appendChild(doorsWrapper);
 document.body.appendChild(transitionContainer);
 
 function performDoorTransition(callback) {
@@ -1736,40 +1725,36 @@ function performDoorTransition(callback) {
   // Update door colors based on the transition
   updateDoorColors(fromSection, toSection);
   
-  // Stage 1: Activate container and close horizontal doors
-  transitionContainer.classList.add('active');
+  // Stage 1: Close horizontal doors
+  transitionContainer.classList.add('active', 'stage-1');
+  playTransitionSound('close');
   
-  // Add a short delay before starting animation for better visibility
   setTimeout(() => {
-    // Play sound effect if desired
-    playTransitionSound('close');
+    // Stage 2: Rotate 90 degrees AND switch to vertical layout
+    transitionContainer.classList.add('stage-2');
+    horizontalDoorsContainer.classList.remove('is-horizontal');
+    horizontalDoorsContainer.classList.add('is-vertical');
+    playTransitionSound('flip');
     
-    // Close horizontal doors
-    transitionContainer.classList.add('stage-1');
-    
-    // Stage 2: Switch to vertical doors
+    // Execute the callback (change section) during rotation
     setTimeout(() => {
-      playTransitionSound('flip');
-      transitionContainer.classList.add('stage-2');
+      if (callback) callback();
       
-      // Execute the callback (change section) during the orientation change
+      // Stage 3: Open vertical doors
       setTimeout(() => {
-        callback();
+        transitionContainer.classList.add('stage-3');
+        playTransitionSound('open');
         
-        // Stage 3: Open vertical doors
+        // Reset everything for next transition
         setTimeout(() => {
-          playTransitionSound('open');
-          transitionContainer.classList.add('stage-3');
-          
-          // Reset the container for next transition
-          setTimeout(() => {
-            transitionContainer.classList.remove('active', 'stage-1', 'stage-2', 'stage-3');
-            isScrolling = false;
-          }, 700); // Longer cleanup time
-        }, 600); // Longer wait before opening
-      }, 400); // Wait before callback
-    }, 700); // Wait before switching orientation
-  }, 100); // Initial delay
+          transitionContainer.classList.remove('active', 'stage-1', 'stage-2', 'stage-3');
+          horizontalDoorsContainer.classList.remove('is-vertical');
+          horizontalDoorsContainer.classList.add('is-horizontal');
+          isScrolling = false;
+        }, 800);
+      }, 400);
+    }, 400);
+  }, 700);
 }
 
 // Add custom door color based on the section being transitioned to
@@ -1784,18 +1769,14 @@ function updateDoorColors(fromSection, toSection) {
     doorColor = '#333'; // Match home section background
   }
   
-  // Apply colors to all doors
+  // Apply colors to both doors
   doorLeft.style.backgroundColor = doorColor;
   doorRight.style.backgroundColor = doorColor;
-  doorTop.style.backgroundColor = doorColor;
-  doorBottom.style.backgroundColor = doorColor;
   
   // Add glowing effect to doors
   const shadowStyle = `0 0 30px ${doorColor}`;
   doorLeft.style.boxShadow = shadowStyle;
   doorRight.style.boxShadow = shadowStyle;
-  doorTop.style.boxShadow = shadowStyle;
-  doorBottom.style.boxShadow = shadowStyle;
 }
 
 // Sound effects for the different transition phases
@@ -1812,11 +1793,6 @@ function playTransitionSound(type) {
     window.transitionAudio.close.volume = 0.2;
     window.transitionAudio.flip.volume = 0.15;
     window.transitionAudio.open.volume = 0.2;
-    
-    // Use base64 encoded sounds or replace with local paths
-    window.transitionAudio.close.src = 'data:audio/mp3;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTGF2ZjU4Ljc2LjEwMAAAAAAAAAAAAAAA/+M4wAAAAAAAAAAAAEluZm8AAAAPAAAAAwAAAbAAqqqq39/f39/f39/f39/f39/MzMzMzMzMzMzMzMzMzJmZmZmZmZmZmZmZmZmZZmZmZmZmZmZmZmZmZmYAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD/4zLAAAALv0lEQXAAAArUQZJQRUYmP8eQAQDgOIAAAOAAAgDAMYxjGMYxjGMYxjGMYxjGMYxjGMYxjGMYxjGMYxjGMYxjGMYxjGP/4zjAAAALWkNDTlYAAAA7QZJhRVYmP8eWAEBgOIAAAOFAEAYxjGMYxjGMYxjGMYxjGMYxjGMYxjGMYxjGMYxjGMYxjGMYxjGMY//jKMAxIACuQZJSRUYmP8eYAIAAAJAAAJAAQBgAAAAAAAAAAAP/4xjAAQAANkGScUVWJj/HmACAAACQAACQAEAYAAAAAAAAAAAD/+M4wAAAAAAAAAAAAEluZm8AAAAPAAAAAwAAAbAAqqqq39/f39/f39/f39/f39/MzMzMzMzMzMzMzMzMzJmZmZmZmZmZmZmZmZmZZmZmZmZmZmZmZmZmZmYAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD/47jAAAALkklEQXAAAAEAQBAAA///YAAAAP83AAAQRMm0'; // Close sound
-    window.transitionAudio.flip.src = 'data:audio/mp3;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTGF2ZjU4Ljc2LjEwMAAAAAAAAAAAAAAA/+M4wAAAAAAAAAAAAEluZm8AAAAPAAAAAwAAAbAAqqqq39/f39/f39/f39/f39/MzMzMzMzMzMzMzMzMzJmZmZmZmZmZmZmZmZmZZmZmZmZmZmZmZmZmZmYAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD/4zjAAAALWkNDTlYAAAA7QZJhRVYmP8eWAEBgOIAAAOFAEAYxjGMYxjGMYxjGMYxjGMYxjGMYxjGMYxjGMYxjGMYxjGMYxjGMY'; // Flip sound
-    window.transitionAudio.open.src = 'data:audio/mp3;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTGF2ZjU4Ljc2LjEwMAAAAAAAAAAAAAAA/+M4wAAAAAAAAAAAAEluZm8AAAAPAAAAAwAAAbAAqqqq39/f39/f39/f39/f39/MzMzMzMzMzMzMzMzMzJmZmZmZmZmZmZmZmZmZZmZmZmZmZmZmZmZmZmYAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD/47jAAAALkklEQXAAAAEAQBAAA///YAAAAP83AAAQBMH0'; // Open sound
   }
   
   // Play the appropriate sound based on transition phase
