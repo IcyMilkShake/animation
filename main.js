@@ -1178,7 +1178,8 @@ function simpleAnimateGlow() {
 }
 
 // Use the appropriate animation function based on complexity
-const animationFunction = THREE.REVISION >= 125 ? animateGlow : simpleAnimateGlow;
+// Force simpleAnimateGlow to avoid breaking InstancedMesh with custom shader
+const animationFunction = simpleAnimateGlow;
 
 // Enhanced animation function
 function animateState(targetState, duration = 2.5) {
@@ -1718,6 +1719,7 @@ function createCustomPlanets() {
     const planetMaterial = planetData.texture
       ? new THREE.MeshBasicMaterial({
           map: planetData.texture,
+          color: planetData.color || 0xffffff,
           transparent: true,
           side: THREE.DoubleSide,
         })
@@ -1907,6 +1909,7 @@ function createCustomPlanets() {
     name: "JS",
     size: 5,
     texture: jsTexture,
+    color: 0xffff00,
     orbitRadius: 25,
     orbitSpeed: 0.09,
     orbitPhase: 0,
