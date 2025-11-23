@@ -1305,6 +1305,49 @@ document.addEventListener('wheel', (event) => {
 document.addEventListener('touchstart', handleTouchStart, { passive: true });
 document.addEventListener('touchend', handleTouchEnd, { passive: true });
 
+function animateColors(sectionId) {
+  let targetBgColor;
+  let targetDonutColor;
+  
+  switch(sectionId) {
+    case 'home':
+      targetBgColor = new THREE.Color(0xffffff);
+      targetDonutColor = new THREE.Color(0xc92900);
+      break;
+    case 'about':
+      targetBgColor = new THREE.Color(0x020217);
+      targetDonutColor = new THREE.Color(0x002f9b);
+      break;
+    case 'projects':
+      targetBgColor = new THREE.Color(0x000020);
+      targetDonutColor = new THREE.Color(0x002f9b);
+      break;
+  }
+  
+  if (targetBgColor) {
+    // Ensure scene.background is initialized
+    if (!scene.background) scene.background = new THREE.Color(0x000000);
+
+    gsap.to(scene.background, {
+      r: targetBgColor.r,
+      g: targetBgColor.g,
+      b: targetBgColor.b,
+      duration: 1.5,
+      ease: "power2.inOut"
+    });
+  }
+  
+  if (targetDonutColor) {
+    gsap.to(donutMaterial.color, {
+      r: targetDonutColor.r,
+      g: targetDonutColor.g,
+      b: targetDonutColor.b,
+      duration: 1.5,
+      ease: "power2.inOut"
+    });
+  }
+}
+
 // Handle section changes
 function goToSection(index) {
   if (isScrolling || index < 0 || index >= sections.length) return;
@@ -1327,6 +1370,8 @@ function goToSection(index) {
   // Animate 3D scene
   const sectionId = sections[index].id;
   current_page = sectionId;
+  
+  animateColors(sectionId);
   
   // Only apply the door animation for home <-> about transitions
   if (previous_page !== current_page) {
@@ -1399,44 +1444,18 @@ function applyDonutIdleAnimation(sectionId) {
       case 'home':
         donut.rotation.y += baseSpeed;
         donut.position.y = Math.sin(time) * baseAmplitude;
-        scene.background = new THREE.Color(0xffffff);
-        donutMaterial.color = new THREE.Color(0xc92900);
         current_page = "home";
         break;
       case 'about':
         donut.rotation.x += baseSpeed * 0.8;
         donut.rotation.z += baseSpeed * 0.3;
         donut.position.x = Math.sin(time * 1.2) * baseAmplitude;
-        //scene.background = new THREE.Color(0x040428);
-        scene.background = new THREE.Color(0x020217)
-        if (donutclicked) {
-          donutMaterial.color = new THREE.Color(0xb57600);
-          donutMaterial.transmission = 0;
-          donutMaterial.emissive = new THREE.Color(0xb57600);
-          donutMaterial.emissiveIntensity = 1;
-          donutMaterial.metalness = 0.2;
-          donutMaterial.roughness = 0.3;
-        } else {
-          donutMaterial.color = new THREE.Color(0x002f9b);
-          donutMaterial.transmission = 0.85;
-          donutMaterial.thickness = 3;
-          donutMaterial.roughness = 0.1;
-          donutMaterial.metalness = 0;
-          donutMaterial.ior = 1.5;
-          donutMaterial.clearcoat = 1;
-          donutMaterial.clearcoatRoughness = 0.05;
-          donutMaterial.envMapIntensity = 1;
-          donutMaterial.emissive = new THREE.Color(0x000000);
-          donutMaterial.emissiveIntensity = 0.0;
-        }
         current_page = "about";
         break;
       case 'projects':
         donut.rotation.z += baseSpeed * 1.2;
         donut.position.y = Math.sin(time * 0.8) * baseAmplitude * 1.5;
         donut.position.x = Math.cos(time * 0.5) * baseAmplitude;
-        scene.background = new THREE.Color(0x000020);
-        donutMaterial.color = new THREE.Color(0x002f9b);
         current_page = "projects";
         break;
     }
