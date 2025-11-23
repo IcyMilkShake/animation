@@ -3227,6 +3227,7 @@ function animate() {
   if (current_page == "about") {
     renderer.autoClear = false;
     renderer.render(planetScene, camera);
+    particlesMesh.visible = true; // Explicitly set visible to false initially
   } else {
     const textBoxes = document.getElementsByClassName('sci-fi-text-box');
     Array.from(textBoxes).forEach(textBox => {
