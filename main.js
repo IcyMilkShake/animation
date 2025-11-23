@@ -19,6 +19,7 @@ let lastFrameTime = 0;
 const MAX_DELTA_TIME = 0.1; // Cap the maximum time between frames
 // Initialize time variable globally
 let time = 0;
+let isIntroRunning = true;
 let hasExploded = false;
 let current_page = "home"
 let previous_page = current_page
@@ -642,6 +643,9 @@ function showTextTransition() {
                         navMenu.addEventListener('wheel', (event) => {
                           event.preventDefault();
                         }, { passive: false });
+                      
+                      // Enable interaction after intro is complete
+                      isIntroRunning = false;
                     }
                   });
                 }
@@ -1600,6 +1604,8 @@ function createNavMenu() {
 // Update the performDoorTransition function to change door colors
 // Initialize keyboard navigation
 document.addEventListener('keydown', (event) => {
+  if (isIntroRunning) return;
+  
   if (event.key === 'ArrowDown' || event.key === 'PageDown') {
     goToSection(currentSectionIndex + 1);
   } else if (event.key === 'ArrowUp' || event.key === 'PageUp') {
@@ -1609,6 +1615,10 @@ document.addEventListener('keydown', (event) => {
 
 // Handle mouse wheel events for controlled scrolling
 sectionsContainer.addEventListener('wheel', (event) => {
+  if (isIntroRunning) return;
+
+  if (isIntroRunning) return;
+
   if (isInsideProjectsAndScrollable()) {
     return; // Allow normal scrolling inside project section
   }
@@ -1632,6 +1642,8 @@ function handleTouchStart(e) {
 }
 
 function handleTouchEnd(e) {
+  if (isIntroRunning) return;
+
   const touchEndY = e.changedTouches[0].clientY;
   const deltaY = touchStartY - touchEndY;
 
