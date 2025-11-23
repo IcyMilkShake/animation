@@ -1354,6 +1354,28 @@ function animateColors(sectionId) {
       ease: "power2.inOut"
     });
   }
+  
+  // Handle Ring Particles Visibility
+  if (sectionId === 'about') {
+    particlesMesh.visible = true;
+    gsap.to(particlesMesh.material, {
+      opacity: 1,
+      duration: 1.5,
+      ease: "power2.inOut"
+    });
+  } else {
+    gsap.to(particlesMesh.material, {
+      opacity: 0,
+      duration: 1.5,
+      ease: "power2.inOut",
+      onComplete: () => {
+        // Only hide if we are still not in about section (in case user switched back quickly)
+        if (current_page !== 'about') {
+          particlesMesh.visible = false;
+        }
+      }
+    });
+  }
 }
 
 // Handle section changes
@@ -3227,8 +3249,6 @@ function animate() {
   if (current_page == "about") {
     renderer.autoClear = false;
     renderer.render(planetScene, camera);
-    particlesMaterial.opacity = 1
-    particlesMesh.visible = true; // Explicitly set visible to false initially
   } else {
     const textBoxes = document.getElementsByClassName('sci-fi-text-box');
     Array.from(textBoxes).forEach(textBox => {
