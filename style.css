@@ -25,7 +25,7 @@ html, body {
 
   background: linear-gradient(
     to top,
-    rgba(155, 89, 182, 0.5) 0%,   /* Deep purple at bottom */
+    rgba(127, 72, 148, 0.5) 0%,   /* Deep purple at bottom */
     rgba(155, 89, 182, 0.2) 35%,  /* Light fade up */
     rgba(155, 89, 182, 0) 100%    /* Fully transparent at top */
   );
