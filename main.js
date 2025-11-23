@@ -874,8 +874,13 @@ const colorArray = new Float32Array(particlesCount * 3);
 // Position particles in a circular ring
 for (let i = 0; i < particlesCount; i++) {
   const angle = (i / particlesCount) * Math.PI * 2;
-  const x = radius * Math.cos(angle);
-  const z = radius * Math.sin(angle);
+  
+  // Create a spread/band effect instead of a sharp ring
+  // Randomly vary the radius by +/- 15 units
+  const currentRadius = radius + (Math.random() - 0.5) * 30;
+  
+  const x = currentRadius * Math.cos(angle);
+  const z = currentRadius * Math.sin(angle);
   const y = (Math.random() - 0.5) * 10; // Small vertical variation
 
   posArray[i * 3 + 0] = x;
@@ -893,10 +898,13 @@ particlesGeometry.setAttribute('color', new THREE.BufferAttribute(colorArray, 3)
 
 const particlesMaterial = new THREE.PointsMaterial({
   size: 0.2,
-  vertexColors: true
+  vertexColors: true,
+  transparent: true,
+  opacity: 0 // Start invisible
 });
 
 const particlesMesh = new THREE.Points(particlesGeometry, particlesMaterial);
+particlesMesh.visible = false; // Explicitly set visible to false initially
 scene.add(particlesMesh);
 
 // Animate both the rings
