@@ -1240,7 +1240,7 @@ const sections = document.querySelectorAll('.section');
 
 // Lock scroll function
 function preventScroll(e) {
-  if (isScrolling && e.cancelable) {
+  if ((isScrolling || isIntroRunning) && e.cancelable) {
     e.preventDefault();
     e.stopPropagation();
     return false;
@@ -1604,7 +1604,12 @@ function createNavMenu() {
 // Update the performDoorTransition function to change door colors
 // Initialize keyboard navigation
 document.addEventListener('keydown', (event) => {
-  if (isIntroRunning) return;
+  if (isIntroRunning) {
+    if (['ArrowUp', 'ArrowDown', 'PageUp', 'PageDown', ' '].includes(event.key)) {
+      event.preventDefault();
+    }
+    return;
+  }
   
   if (event.key === 'ArrowDown' || event.key === 'PageDown') {
     goToSection(currentSectionIndex + 1);
@@ -1615,9 +1620,10 @@ document.addEventListener('keydown', (event) => {
 
 // Handle mouse wheel events for controlled scrolling
 sectionsContainer.addEventListener('wheel', (event) => {
-  if (isIntroRunning) return;
-
-  if (isIntroRunning) return;
+  if (isIntroRunning) {
+    event.preventDefault();
+    return;
+  }
 
   if (isInsideProjectsAndScrollable()) {
     return; // Allow normal scrolling inside project section
