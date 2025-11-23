@@ -828,10 +828,10 @@ const middleStarsColorArray = new Float32Array(middleStarsCount * 3);
 
 function getRandomColor() {
   const colors = [
-    new THREE.Color(0x3d1e00), // Brown
+    new THREE.Color(0x660000), // Brown
     new THREE.Color(0xffffff), // White
-    new THREE.Color(0x831aa5), // Purple
-    new THREE.Color(0x1f6b7a), // Teal
+    new THREE.Color(0x180045), // Purple
+    new THREE.Color(0xe3ffff), // Teal
   ];
   return colors[Math.floor(Math.random() * colors.length)];
 }
