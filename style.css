@@ -134,6 +134,8 @@ canvas {
   scrollbar-width: none;
   overscroll-behavior: contain; /* Prevent bounce effects on iOS */
   -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
+  opacity: 0;
+  pointer-events: none;
 }
 
 .sections::-webkit-scrollbar {
