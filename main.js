@@ -68,6 +68,8 @@ function createIntroScreen() {
   const controls = new OrbitControls(camera, renderer.domElement);
   controls.enableDamping = true;
   controls.dampingFactor = 0.05;
+  controls.enableZoom = false;
+  controls.enablePan = false;
   
   // Setup raycaster for mouse interaction
   const raycaster = new THREE.Raycaster();
@@ -636,6 +638,18 @@ function showTextTransition() {
                         ease: "power2.inOut"
                       });
 
+                      const sections = document.querySelector('.sections');
+                      if (sections) {
+                         gsap.to(sections, {
+                           opacity: 1,
+                           duration: 1,
+                           ease: "power2.inOut",
+                           onStart: () => {
+                             sections.style.pointerEvents = 'auto';
+                           }
+                         });
+                      }
+
                       if (typeof createNavMenu === 'function')   createNavMenu();
                       if (typeof goToSection === 'function') goToSection(0);
                       if (typeof animate === 'function' && animate !== window.animate) animate();
@@ -677,6 +691,11 @@ document.head.appendChild(style);
 document.addEventListener('DOMContentLoaded', () => {
   // Hide main page content initially
   document.getElementById('bg').style.opacity = '0';
+  const sections = document.querySelector('.sections');
+  if (sections) {
+    sections.style.opacity = '0';
+    sections.style.pointerEvents = 'none';
+  }
   
   // Create and start intro
   createIntroScreen();
@@ -1299,6 +1318,10 @@ const sectionsContainer = document.querySelector('.sections');
 sectionsContainer.addEventListener('wheel', preventScroll, { passive: false });
 sectionsContainer.addEventListener('touchmove', preventScroll, { passive: false });
 document.addEventListener('wheel', (event) => {
+  if (isIntroRunning) {
+    return;
+  }
+
   if (isInsideProjectsAndScrollable()) {
     return; // Allow normal scrolling inside project section
   }
@@ -1344,7 +1367,7 @@ function animateColors(sectionId) {
       r: targetBgColor.r,
       g: targetBgColor.g,
       b: targetBgColor.b,
-      duration: 1.5,
+      duration: 0.8,
       ease: "power2.inOut"
     });
   }
@@ -1354,7 +1377,7 @@ function animateColors(sectionId) {
       r: targetDonutColor.r,
       g: targetDonutColor.g,
       b: targetDonutColor.b,
-      duration: 1.5,
+      duration: 0.8,
       ease: "power2.inOut"
     });
   }
